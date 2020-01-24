@@ -3,6 +3,7 @@ name = "zone-detect"
 version = "0.1.0"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
 edition = "2018"
+license = "BSD-3-Clause"
 
 [dependencies]
 thiserror = "1.0"
