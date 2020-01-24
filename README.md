@@ -3,6 +3,10 @@
 This is a simple Rust library that wraps the
 [ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) C library.
 
+The full interface is wrapped via
+[bindgen](https://github.com/rust-lang/rust-bindgen) in the `sys`
+module. Part of the API has a safe wrapper in the root of the crate.
+
 ## Submodule
 
 The [ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) repo, which
