@@ -1,0 +1,15 @@
+[package]
+name = "zone-detect"
+version = "0.1.0"
+authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+thiserror = "1.0"
+
+[dev-dependencies]
+structopt = "0.3"
+
+[build-dependencies]
+bindgen = "0.52"
+cc = "1.0"
