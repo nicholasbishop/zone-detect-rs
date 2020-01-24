@@ -1,3 +1,19 @@
+//! Safe wrapper around part of the unsafe sys module.
+//!
+//! Example:
+//!
+//! ```no_run
+//! let path = std::path::Path::new("/path/to/timezone21.bin");
+//! let database = zone_detect::Database::open(path)
+//!     .expect("failed to open database");
+//! let zones = database.lookup(&zone_detect::Location {
+//!     latitude: 35.0715,
+//!     longitude: -82.5216,
+//! }).expect("database lookup failed");
+//! ```
+
+#![deny(missing_docs)]
+
 pub mod sys;
 
 use std::{
@@ -10,32 +26,44 @@ use std::{
 };
 use thiserror::Error;
 
+/// Zone database.
 pub struct Database {
     handle: *mut sys::ZoneDetect,
 }
 
+/// Zone database errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Error when the database cannot be opened.
     #[error("failed to open database")]
     OpenFailed,
+    /// Error when the database path is contains nul bytes.
     #[error("path contains nul bytes")]
     PathError(NulError),
+    /// Error when a string in the database is not valid UTF-8.
     #[error("string is not valid UTF-8")]
     InvalidString(Utf8Error),
 }
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Latitude and longitude.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Location {
+    /// Latitude.
     pub latitude: f32,
+    /// Longitude.
     pub longitude: f32,
 }
 
+/// Zone retrieved from the database.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Zone {
+    /// Polygon ID.
     pub polygon_id: u32,
+    /// Metadata ID.
     pub meta_id: u32,
+    /// Zone information. The keys will vary depending on the database.
     pub fields: HashMap<String, String>,
 }
 
@@ -60,6 +88,7 @@ unsafe fn convert_c_strings_to_hashmap(
 }
 
 impl Database {
+    /// Open a zone database.
     pub fn open(path: &Path) -> Result<Database> {
         let path_str_c = CString::new(path.as_os_str().as_bytes())
             .map_err(Error::PathError)?;
@@ -74,6 +103,7 @@ impl Database {
         }
     }
 
+    /// Look up a location within the zone database.
     pub fn lookup(&self, location: &Location) -> Result<Vec<Zone>> {
         unsafe {
             let mut safezone = 0.0f32;
