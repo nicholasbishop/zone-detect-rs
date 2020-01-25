@@ -5,6 +5,7 @@ authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
 edition = "2018"
 license = "BSD-3-Clause"
 repository = "https://github.com/nicholasbishop/zone-detect-rs"
+description = "Simple wrapper for the ZoneDetect C library."
 
 [dependencies]
 thiserror = "1.0"
