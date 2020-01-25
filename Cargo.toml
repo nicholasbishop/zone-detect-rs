@@ -11,6 +11,7 @@ description = "Simple wrapper for the ZoneDetect C library."
 thiserror = "1.0"
 
 [dev-dependencies]
+clap = "2.33"
 structopt = "0.3"
 
 [build-dependencies]

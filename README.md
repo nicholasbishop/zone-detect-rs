@@ -15,6 +15,4 @@ sure to run `git submodule update --init` after cloning this repo.
 
 ## Running the example
 
-    cargo run --example demo timezone21.bin -- 35.0715 -82.5216
-
-Note the `--`, that's needed if the latitude or longitude is negative.
+    cargo run --example demo timezone21.bin 35.0715 -82.5216
