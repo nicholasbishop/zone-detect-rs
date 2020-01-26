@@ -95,8 +95,7 @@ pub struct ZoneDetectResult {
     pub metaId: uint32_t,
     // TODO: maybe change this to &str
     // TODO: maybe combine these two fields into a hashmap
-    pub fieldNames: Vec<String>,
-    pub data: Vec<String>,
+    pub fields: std::collections::HashMap<String, String>,
 }
 #[derive(Clone)]
 #[repr(C)]
@@ -1118,9 +1117,8 @@ pub unsafe extern "C" fn ZDLookup(
                 results.push(ZoneDetectResult {
                     polygonId,
                     metaId: metadataIndex,
-                    fieldNames: (*library).fieldNames.clone(),
+                    fields: std::collections::HashMap::with_capacity((*library).fieldNames.len()),
                     lookupResult,
-                    data: Vec::new(),
                 });
                 numResults = numResults.wrapping_add(1)
             }
@@ -1180,12 +1178,12 @@ pub unsafe extern "C" fn ZDLookup(
             .metadataOffset
             .wrapping_add(results[i_1 as usize].metaId);
 
-        let data = &mut results[i_1 as usize].data;
-        data.resize((*library).fieldNames.len(), String::new());
         let mut j_0: size_t = 0 as libc::c_int as size_t;
         while j_0 < (*library).fieldNames.len() as libc::c_ulong {
-            data[j_0 as usize] = crate::parse_string(&*library, &mut tmpIndex)
+            let key = (*library).fieldNames[j_0 as usize].clone();
+            let value = crate::parse_string(&*library, &mut tmpIndex)
                 .expect("failed to get field data");
+            results[i_1 as usize].fields.insert(key, value);
             j_0 = j_0.wrapping_add(1)
         }
         i_1 = i_1.wrapping_add(1)
