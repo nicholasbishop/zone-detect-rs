@@ -163,20 +163,6 @@ pub struct Reader {
     pub firstLat: int32_t,
     pub firstLon: int32_t,
 }
-static mut zdErrorHandler: Option<
-    unsafe extern "C" fn(_: libc::c_int, _: libc::c_int) -> (),
-> = None;
-unsafe extern "C" fn zdError(
-    mut errZD: ZDInternalError,
-    mut errNative: libc::c_int,
-) {
-    if zdErrorHandler.is_some() {
-        zdErrorHandler.expect("non-null function pointer")(
-            errZD as libc::c_int,
-            errNative,
-        );
-    };
-}
 unsafe extern "C" fn ZDFloatToFixedPoint(
     mut input: libc::c_float,
     mut scale: libc::c_float,
@@ -1216,14 +1202,4 @@ pub unsafe extern "C" fn ZDLookupResultToString(
         _ => {}
     }
     b"Unknown\x00" as *const u8 as *const libc::c_char
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ZDSetErrorHandler(
-    mut handler: Option<
-        unsafe extern "C" fn(_: libc::c_int, _: libc::c_int) -> (),
-    >,
-) -> libc::c_int {
-    zdErrorHandler = handler;
-    0 as libc::c_int
 }
