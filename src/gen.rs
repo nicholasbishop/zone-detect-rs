@@ -3,8 +3,6 @@
 extern "C" {
     #[no_mangle]
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
 }
 type size_t = libc::c_ulong;
 #[derive(Clone, Debug)]
