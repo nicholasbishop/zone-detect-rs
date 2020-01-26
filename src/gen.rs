@@ -84,8 +84,8 @@ use crate::LookupResult;
  */
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct Reader {
-    pub library: *const ZoneDetect,
+pub struct Reader<'a> {
+    pub library: &'a ZoneDetect,
     pub polygonIndex: uint32_t,
     pub numVertices: uint64_t,
     pub done: uint8_t,
@@ -98,6 +98,26 @@ pub struct Reader {
     pub firstLat: int32_t,
     pub firstLon: int32_t,
 }
+
+impl<'a> Reader<'a> {
+    fn new(library: &'a ZoneDetect, polygonIndex: u32) -> Reader {
+        Reader {
+            library,
+            polygonIndex,
+            numVertices: 0,
+            done: 0,
+            first: 1,
+            referenceStart: 0,
+            referenceEnd: 0,
+            referenceDirection: 0,
+            pointLat: 0,
+            pointLon: 0,
+            firstLat: 0,
+            firstLon: 0,
+        }
+    }
+}
+
 unsafe extern "C" fn ZDFloatToFixedPoint(
     mut input: libc::c_float,
     mut scale: libc::c_float,
@@ -295,20 +315,7 @@ unsafe extern "C" fn ZDDecodePoint(
         ZDUnshuffle(point >> 1 as libc::c_int) as uint64_t
     ) as int32_t;
 }
-unsafe extern "C" fn ZDReaderInit(
-    mut reader: *mut Reader,
-    mut library: *const ZoneDetect,
-    mut polygonIndex: uint32_t,
-) {
-    memset(
-        reader as *mut libc::c_void,
-        0 as libc::c_int,
-        ::std::mem::size_of::<Reader>() as libc::c_ulong,
-    );
-    (*reader).library = library;
-    (*reader).polygonIndex = polygonIndex;
-    (*reader).first = 1 as libc::c_int as uint8_t;
-}
+
 unsafe extern "C" fn ZDReaderGetPoint(
     mut reader: *mut Reader,
     mut pointLat: *mut int32_t,
@@ -560,26 +567,12 @@ unsafe extern "C" fn ZDFindPolygon(
     0 as libc::c_int
 }
 unsafe extern "C" fn ZDPolygonToListInternal(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut polygonIndex: uint32_t,
     mut length: *mut size_t,
 ) -> *mut int32_t {
     let mut current_block: u64;
-    let mut reader: Reader = Reader {
-        library: 0 as *const ZoneDetect,
-        polygonIndex: 0,
-        numVertices: 0,
-        done: 0,
-        first: 0,
-        referenceStart: 0,
-        referenceEnd: 0,
-        referenceDirection: 0,
-        pointLat: 0,
-        pointLon: 0,
-        firstLat: 0,
-        firstLon: 0,
-    };
-    ZDReaderInit(&mut reader, library, polygonIndex);
+    let mut reader = Reader::new(library, polygonIndex);
     let mut listLength: size_t =
         (2 as libc::c_int * 100 as libc::c_int) as size_t;
     let mut listIndex: size_t = 0 as libc::c_int as size_t;
@@ -649,7 +642,7 @@ unsafe extern "C" fn ZDPolygonToListInternal(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZDPolygonToList(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut polygonId: uint32_t,
     mut lengthPtr: *mut size_t,
 ) -> *mut libc::c_float {
@@ -712,7 +705,7 @@ pub unsafe extern "C" fn ZDPolygonToList(
     0 as *mut libc::c_float
 }
 unsafe extern "C" fn ZDPointInPolygon(
-    mut library: *const ZoneDetect,
+    mut library: &ZoneDetect,
     mut polygonIndex: uint32_t,
     mut latFixedPoint: int32_t,
     mut lonFixedPoint: int32_t,
@@ -725,21 +718,7 @@ unsafe extern "C" fn ZDPointInPolygon(
     let mut prevQuadrant: libc::c_int = 0 as libc::c_int;
     let mut winding: libc::c_int = 0 as libc::c_int;
     let mut first: uint8_t = 1 as libc::c_int as uint8_t;
-    let mut reader: Reader = Reader {
-        library: 0 as *const ZoneDetect,
-        polygonIndex: 0,
-        numVertices: 0,
-        done: 0,
-        first: 0,
-        referenceStart: 0,
-        referenceEnd: 0,
-        referenceDirection: 0,
-        pointLat: 0,
-        pointLon: 0,
-        firstLat: 0,
-        firstLon: 0,
-    };
-    ZDReaderInit(&mut reader, library, polygonIndex);
+    let mut reader = Reader::new(library, polygonIndex);
     loop {
         let mut result: libc::c_int =
             ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon);
