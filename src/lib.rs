@@ -43,7 +43,7 @@ pub fn parse_string(
 pub struct Database {
     file: File,
     mapping: Option<Mmap>,
-    handle: gen::ZoneDetect,
+    library: gen::ZoneDetect,
 }
 
 impl Database {
@@ -54,7 +54,7 @@ impl Database {
         let mapping = unsafe { MmapOptions::new().map(&file) }?;
 
         let mut db = Database {
-            handle: gen::ZoneDetect {
+            library: gen::ZoneDetect {
                 fd,
                 length: metadata.len() as i64,
                 mapping: mapping.as_ptr(),
@@ -72,14 +72,14 @@ impl Database {
             file,
             mapping: Some(mapping),
         };
-        Self::parse_header(&mut db.handle)?;
+        Self::parse_header(&mut db.library)?;
         Ok(db)
     }
 
     // TODO: ZDOpenDatabaseFromMemory
 
     pub fn table_type(&self) -> TableType {
-        self.handle.tableType
+        self.library.tableType
     }
 
     fn parse_header(db: &mut gen::ZoneDetect) -> Result<()> {
@@ -128,11 +128,11 @@ impl Database {
 
     pub fn simple_lookup(&self, lat: f32, lon: f32) -> Option<String> {
         let results = unsafe {
-            gen::ZDLookup(&self.handle, lat, lon, std::ptr::null_mut())
+            gen::ZDLookup(&self.library, lat, lon, std::ptr::null_mut())
         };
 
         if let Some(result) = results.first() {
-            match self.handle.tableType {
+            match self.library.tableType {
                 TableType::Country => result.fields.get("Name"),
                 TableType::Timezone => {
                     if let Some(prefix) = result.fields.get("TimezoneIdPrefix")
@@ -153,7 +153,7 @@ impl Database {
 
 impl Drop for Database {
     fn drop(&mut self) {
-        unsafe { gen::ZDCloseDatabase(&mut self.handle) };
+        unsafe { gen::ZDCloseDatabase(&mut self.library) };
     }
 }
 
@@ -164,9 +164,9 @@ mod tests {
     #[test]
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
-        assert_eq!(db.handle.tableType, TableType::Timezone);
-        assert_eq!(db.handle.precision, 21);
-        assert_eq!(db.handle.fieldNames, vec![
+        assert_eq!(db.library.tableType, TableType::Timezone);
+        assert_eq!(db.library.precision, 21);
+        assert_eq!(db.library.fieldNames, vec![
             "TimezoneIdPrefix".to_string(),
             "TimezoneId".to_string(),
             "CountryAlpha2".to_string(),
