@@ -106,7 +106,7 @@ pub struct ZoneDetectOpaque {
     pub tableType: crate::TableType,
     pub version: uint8_t,
     pub precision: uint8_t,
-    pub notice: *mut libc::c_char,
+    pub notice: String,
     pub fieldNames: Vec<String>,
     pub bboxOffset: uint32_t,
     pub metadataOffset: uint32_t,
@@ -1004,14 +1004,6 @@ unsafe extern "C" fn ZDPointInPolygon(
     }
     return ZD_LOOKUP_ON_BORDER_SEGMENT;
 }
-#[no_mangle]
-pub unsafe extern "C" fn ZDCloseDatabase(mut library: *mut ZoneDetect) {
-    if !library.is_null() {
-        if !(*library).notice.is_null() {
-            free((*library).notice as *mut libc::c_void);
-        }
-    };
-}
 
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookup(
@@ -1200,12 +1192,6 @@ pub unsafe extern "C" fn ZDLookup(
     return results;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn ZDGetNotice(
-    mut library: *const ZoneDetect,
-) -> *const libc::c_char {
-    return (*library).notice;
-}
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookupResultToString(
     mut result: ZDLookupResult,

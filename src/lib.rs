@@ -3,7 +3,7 @@ mod gen;
 use memmap::{Mmap, MmapOptions};
 use std::{
     convert::TryInto, ffi::CStr, fs::File, io, os::unix::io::AsRawFd,
-    path::Path, ptr, slice, str::Utf8Error,
+    path::Path, slice, str::Utf8Error,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -20,6 +20,8 @@ pub enum Error {
     InvalidTableType(u8),
     #[error("invalid field name")]
     InvalidFieldName(u8, Utf8Error),
+    #[error("invalid notice")]
+    InvalidNotice(Utf8Error),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -58,12 +60,12 @@ impl Database {
                 fd,
                 length: metadata.len() as i64,
                 mapping: mapping.as_ptr(),
+                notice: String::new(),
 
                 // Set the rest to zero for now
                 tableType: TableType::Country,
                 version: 0,
                 precision: 0,
-                notice: ptr::null_mut(),
                 fieldNames: Vec::new(),
                 bboxOffset: 0,
                 metadataOffset: 0,
@@ -80,6 +82,10 @@ impl Database {
 
     pub fn table_type(&self) -> TableType {
         self.library.tableType
+    }
+
+    pub fn notice(&self) -> &str {
+        &self.library.notice
     }
 
     fn parse_header(db: &mut gen::ZoneDetect) -> Result<()> {
@@ -123,6 +129,9 @@ impl Database {
             db.fieldNames.push(name.into());
         }
 
+        db.notice = parse_string(db, &mut index)
+            .map_err(|err| Error::InvalidNotice(err))?;
+
         Ok(())
     }
 
@@ -151,12 +160,6 @@ impl Database {
     }
 }
 
-impl Drop for Database {
-    fn drop(&mut self) {
-        unsafe { gen::ZDCloseDatabase(&mut self.library) };
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,20 +167,26 @@ mod tests {
     #[test]
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
+        assert_eq!(db.library.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
         assert_eq!(db.library.tableType, TableType::Timezone);
         assert_eq!(db.library.precision, 21);
-        assert_eq!(db.library.fieldNames, vec![
-            "TimezoneIdPrefix".to_string(),
-            "TimezoneId".to_string(),
-            "CountryAlpha2".to_string(),
-            "CountryName".to_string(),
-        ]);
+        assert_eq!(
+            db.library.fieldNames,
+            vec![
+                "TimezoneIdPrefix".to_string(),
+                "TimezoneId".to_string(),
+                "CountryAlpha2".to_string(),
+                "CountryName".to_string(),
+            ]
+        );
     }
 
     #[test]
     fn test_simple_lookup() {
         let db = Database::open("data/timezone21.bin").unwrap();
-        assert_eq!(db.simple_lookup(40.7128, -74.0060).unwrap(),
-                   "America/New_York");
+        assert_eq!(
+            db.simple_lookup(40.7128, -74.0060).unwrap(),
+            "America/New_York"
+        );
     }
 }
