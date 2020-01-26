@@ -31,13 +31,11 @@ pub type __int32_t = libc::c_int;
 pub type __uint32_t = libc::c_uint;
 pub type __int64_t = libc::c_long;
 pub type __uint64_t = libc::c_ulong;
-pub type __off_t = libc::c_long;
 pub type int32_t = __int32_t;
 pub type int64_t = __int64_t;
 pub type uint8_t = __uint8_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
-pub type off_t = __off_t;
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
@@ -51,7 +49,7 @@ pub struct ZoneDetectResult {
 #[repr(C)]
 pub struct ZoneDetectOpaque {
     pub fd: libc::c_int,
-    pub length: off_t,
+    pub length: u64,
     pub mapping: *const uint8_t,
     pub tableType: crate::TableType,
     pub version: uint8_t,

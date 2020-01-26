@@ -11,7 +11,7 @@ pub enum Error {
     #[error("IO error")]
     IoError(#[from] io::Error),
     #[error("database header is truncated")]
-    TruncatedDatabase(i64),
+    TruncatedDatabase(u64),
     #[error("invalid magic bytes")]
     InvalidMagic([u8; 3]),
     #[error("invalid version")]
@@ -80,7 +80,7 @@ impl Database {
         let mut db = Database {
             library: gen::ZoneDetect {
                 fd,
-                length: metadata.len() as i64,
+                length: metadata.len() as u64,
                 mapping: mapping.as_ptr(),
                 notice: String::new(),
 
@@ -185,7 +185,7 @@ impl Database {
         db.dataOffset += index;
 
         // Verify file length
-        let length = (tmp + db.dataOffset as u64) as i64;
+        let length = tmp + db.dataOffset as u64;
         if length != db.length {
             return Err(Error::LengthMismatch(length as usize));
         }
