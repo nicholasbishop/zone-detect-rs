@@ -159,8 +159,12 @@ impl Drop for Database {
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
+    use super::*;
 
     #[test]
-    fn test_open() {}
+    fn test_simple_lookup() {
+        let db = Database::open("data/timezone21.bin").unwrap();
+        assert_eq!(db.simple_lookup(40.7128, -74.0060).unwrap(),
+                   "America/New_York");
+    }
 }
