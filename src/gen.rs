@@ -29,7 +29,6 @@ pub struct ZoneDetectResult {
 #[derive(Clone)]
 #[repr(C)]
 pub struct ZoneDetectOpaque {
-    pub fd: libc::c_int,
     pub length: u64,
     pub mapping: *const uint8_t,
     pub tableType: crate::TableType,

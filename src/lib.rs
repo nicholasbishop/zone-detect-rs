@@ -2,8 +2,8 @@ mod gen;
 
 use memmap::{Mmap, MmapOptions};
 use std::{
-    convert::TryInto, ffi::CStr, fs::File, io, os::unix::io::AsRawFd,
-    path::Path, slice, str::Utf8Error,
+    convert::TryInto, ffi::CStr, fs::File, io, path::Path, slice,
+    str::Utf8Error,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -73,13 +73,11 @@ pub struct Database {
 impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Database> {
         let file = File::open(path)?;
-        let fd = file.as_raw_fd();
         let metadata = file.metadata()?;
         let mapping = unsafe { MmapOptions::new().map(&file) }?;
 
         let mut db = Database {
             library: gen::ZoneDetect {
-                fd,
                 length: metadata.len() as u64,
                 mapping: mapping.as_ptr(),
                 notice: String::new(),
