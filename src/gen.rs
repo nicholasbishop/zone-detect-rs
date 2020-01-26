@@ -13,16 +13,12 @@ extern "C" {
     fn sqrtf(_: libc::c_float) -> libc::c_float;
 }
 type size_t = libc::c_ulong;
-type int32_t = i32;
-type uint8_t = u8;
-type uint32_t = u32;
-type uint64_t = u64;
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
     pub lookupResult: LookupResult,
-    pub polygonId: uint32_t,
-    pub metaId: uint32_t,
+    pub polygonId: u32,
+    pub metaId: u32,
     // TODO: maybe change this to &str
     pub fields: std::collections::HashMap<String, String>,
 }
@@ -30,15 +26,15 @@ pub struct ZoneDetectResult {
 #[repr(C)]
 pub struct ZoneDetectOpaque {
     pub length: u64,
-    pub mapping: *const uint8_t,
+    pub mapping: *const u8,
     pub tableType: crate::TableType,
-    pub version: uint8_t,
-    pub precision: uint8_t,
+    pub version: u8,
+    pub precision: u8,
     pub notice: String,
     pub fieldNames: Vec<String>,
-    pub bboxOffset: uint32_t,
-    pub metadataOffset: uint32_t,
-    pub dataOffset: uint32_t,
+    pub bboxOffset: u32,
+    pub metadataOffset: u32,
+    pub dataOffset: u32,
 }
 pub type ZoneDetect = ZoneDetectOpaque;
 use crate::LookupResult;
@@ -72,17 +68,17 @@ use crate::LookupResult;
 #[repr(C)]
 pub struct Reader<'a> {
     pub library: &'a ZoneDetect,
-    pub polygonIndex: uint32_t,
-    pub numVertices: uint64_t,
-    pub done: uint8_t,
-    pub first: uint8_t,
-    pub referenceStart: uint32_t,
-    pub referenceEnd: uint32_t,
-    pub referenceDirection: int32_t,
-    pub pointLat: int32_t,
-    pub pointLon: int32_t,
-    pub firstLat: int32_t,
-    pub firstLon: int32_t,
+    pub polygonIndex: u32,
+    pub numVertices: u64,
+    pub done: u8,
+    pub first: u8,
+    pub referenceStart: u32,
+    pub referenceEnd: u32,
+    pub referenceDirection: i32,
+    pub pointLat: i32,
+    pub pointLon: i32,
+    pub firstLat: i32,
+    pub firstLon: i32,
 }
 
 impl<'a> Reader<'a> {
@@ -108,15 +104,15 @@ unsafe extern "C" fn ZDFloatToFixedPoint(
     mut input: libc::c_float,
     mut scale: libc::c_float,
     mut precision: libc::c_uint,
-) -> int32_t {
+) -> i32 {
     let inputScaled: libc::c_float = input / scale;
     (inputScaled
         * ((1 as libc::c_int)
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as libc::c_float) as int32_t
+            as libc::c_float) as i32
 }
 unsafe extern "C" fn ZDFixedPointToFloat(
-    mut input: int32_t,
+    mut input: i32,
     mut scale: libc::c_float,
     mut precision: libc::c_uint,
 ) -> libc::c_float {
@@ -128,22 +124,22 @@ unsafe extern "C" fn ZDFixedPointToFloat(
 }
 pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     library: &ZoneDetect,
-    mut index: *mut uint32_t,
-    mut result: *mut uint64_t,
+    mut index: *mut u32,
+    mut result: *mut u64,
 ) -> libc::c_uint {
-    if *index >= (*library).length as uint32_t {
+    if *index >= (*library).length as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
-    let mut value: uint64_t = 0 as libc::c_int as uint64_t;
+    let mut value: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let buffer: *const uint8_t = (*library).mapping.offset(*index as isize);
-    let bufferEnd: *const uint8_t = (*library)
+    let buffer: *const u8 = (*library).mapping.offset(*index as isize);
+    let bufferEnd: *const u8 = (*library)
         .mapping
         .offset((*library).length as isize)
         .offset(-(1 as libc::c_int as isize));
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     loop {
-        value |= (*buffer.offset(i as isize) as uint64_t
+        value |= (*buffer.offset(i as isize) as u64
             & 0x7f as libc::c_int as libc::c_ulong)
             << shift;
         shift = shift.wrapping_add(7 as libc::c_uint);
@@ -158,16 +154,16 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     }
     i = i.wrapping_add(1);
     *result = value;
-    *index = (*index as libc::c_uint).wrapping_add(i) as uint32_t as uint32_t;
+    *index = (*index as libc::c_uint).wrapping_add(i) as u32 as u32;
     i
 }
 unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     library: &ZoneDetect,
-    mut index: *mut uint32_t,
-    mut result: *mut uint64_t,
+    mut index: *mut u32,
+    mut result: *mut u64,
 ) -> libc::c_uint {
-    let mut i: uint32_t = *index;
-    if *index >= (*library).length as uint32_t {
+    let mut i: u32 = *index;
+    if *index >= (*library).length as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
     if *(*library).mapping.offset(i as isize) as libc::c_int
@@ -191,10 +187,10 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     }
     *index = i;
     i = i.wrapping_add(1);
-    let mut i2: uint32_t = i;
+    let mut i2: u32 = i;
     ZDDecodeVariableLengthUnsigned(library, &mut i2, result)
 }
-unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> i64 {
+unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
     if value & 1 as libc::c_int as libc::c_ulong != 0 {
         -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64)
     } else {
@@ -203,29 +199,29 @@ unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> i64 {
 }
 unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     library: &ZoneDetect,
-    mut index: *mut uint32_t,
-    mut result: *mut int32_t,
+    mut index: *mut u32,
+    mut result: *mut i32,
 ) -> libc::c_uint {
-    let mut value: uint64_t = 0 as libc::c_int as uint64_t;
+    let mut value: u64 = 0 as libc::c_int as u64;
     let retVal: libc::c_uint =
         ZDDecodeVariableLengthUnsigned(library, index, &mut value);
-    *result = ZDDecodeUnsignedToSigned(value) as int32_t;
+    *result = ZDDecodeUnsignedToSigned(value) as i32;
     retVal
 }
 pub unsafe extern "C" fn ZDParseString(
     library: &ZoneDetect,
-    mut index: *mut uint32_t,
+    mut index: *mut u32,
 ) -> *mut libc::c_char {
-    let mut strLength: uint64_t = 0;
+    let mut strLength: u64 = 0;
     if ZDDecodeVariableLengthUnsigned(library, index, &mut strLength) == 0 {
         return 0 as *mut libc::c_char;
     }
-    let mut strOffset: uint32_t = *index;
+    let mut strOffset: u32 = *index;
     let mut remoteStr: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     if strLength >= 256 as libc::c_int as libc::c_ulong {
         strOffset = (*library)
             .metadataOffset
-            .wrapping_add(strLength as uint32_t)
+            .wrapping_add(strLength as u32)
             .wrapping_sub(256 as libc::c_int as libc::c_uint);
         remoteStr = 1 as libc::c_int as libc::c_uint;
         if ZDDecodeVariableLengthUnsigned(
@@ -256,19 +252,19 @@ pub unsafe extern "C" fn ZDParseString(
         *str.offset(strLength as isize) = 0 as libc::c_int as libc::c_char
     }
     if remoteStr == 0 {
-        *index = (*index as libc::c_uint).wrapping_add(strLength as uint32_t)
-            as uint32_t as uint32_t
+        *index = (*index as libc::c_uint).wrapping_add(strLength as u32)
+            as u32 as u32
     }
     str
 }
 
 unsafe extern "C" fn ZDPointInBox(
-    mut xl: int32_t,
-    mut x: int32_t,
-    mut xr: int32_t,
-    mut yl: int32_t,
-    mut y: int32_t,
-    mut yr: int32_t,
+    mut xl: i32,
+    mut x: i32,
+    mut xr: i32,
+    mut yl: i32,
+    mut y: i32,
+    mut yr: i32,
 ) -> libc::c_int {
     if xl <= x && x <= xr || xr <= x && x <= xl {
         if yl <= y && y <= yr || yr <= y && y <= yl {
@@ -277,7 +273,7 @@ unsafe extern "C" fn ZDPointInBox(
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn ZDUnshuffle(mut w: uint64_t) -> uint32_t {
+unsafe extern "C" fn ZDUnshuffle(mut w: u64) -> u32 {
     w &= 0x5555555555555555 as libc::c_long as libc::c_ulong;
     w = (w | w >> 1 as libc::c_int)
         & 0x3333333333333333 as libc::c_long as libc::c_ulong;
@@ -289,27 +285,27 @@ unsafe extern "C" fn ZDUnshuffle(mut w: uint64_t) -> uint32_t {
         & 0xffff0000ffff as libc::c_long as libc::c_ulong;
     w = (w | w >> 16 as libc::c_int)
         & 0xffffffff as libc::c_uint as libc::c_ulong;
-    w as uint32_t
+    w as u32
 }
 unsafe extern "C" fn ZDDecodePoint(
-    mut point: uint64_t,
-    mut lat: *mut int32_t,
-    mut lon: *mut int32_t,
+    mut point: u64,
+    mut lat: *mut i32,
+    mut lon: *mut i32,
 ) {
-    *lat = ZDDecodeUnsignedToSigned(ZDUnshuffle(point) as uint64_t) as int32_t;
+    *lat = ZDDecodeUnsignedToSigned(ZDUnshuffle(point) as u64) as i32;
     *lon = ZDDecodeUnsignedToSigned(
-        ZDUnshuffle(point >> 1 as libc::c_int) as uint64_t
-    ) as int32_t;
+        ZDUnshuffle(point >> 1 as libc::c_int) as u64
+    ) as i32;
 }
 
 unsafe extern "C" fn ZDReaderGetPoint(
     mut reader: *mut Reader,
-    mut pointLat: *mut int32_t,
-    mut pointLon: *mut int32_t,
+    mut pointLat: *mut i32,
+    mut pointLon: *mut i32,
 ) -> libc::c_int {
-    let mut referenceDone: uint8_t = 0;
-    let mut diffLat: int32_t = 0 as libc::c_int;
-    let mut diffLon: int32_t = 0 as libc::c_int;
+    let mut referenceDone: u8 = 0;
+    let mut diffLat: i32 = 0 as libc::c_int;
+    let mut diffLon: i32 = 0 as libc::c_int;
     loop {
         if (*reader).done as libc::c_int > 1 as libc::c_int {
             return 0 as libc::c_int;
@@ -329,9 +325,9 @@ unsafe extern "C" fn ZDReaderGetPoint(
                 return -(1 as libc::c_int);
             }
         }
-        referenceDone = 0 as libc::c_int as uint8_t;
+        referenceDone = 0 as libc::c_int as u8;
         if (*(*reader).library).version as libc::c_int == 1 as libc::c_int {
-            let mut point: uint64_t = 0 as libc::c_int as uint64_t;
+            let mut point: u64 = 0 as libc::c_int as u64;
             if (*reader).referenceDirection == 0 {
                 if ZDDecodeVariableLengthUnsigned(
                     (*reader).library,
@@ -352,7 +348,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     return -(1 as libc::c_int);
                 }
                 if (*reader).referenceStart >= (*reader).referenceEnd {
-                    referenceDone = 1 as libc::c_int as uint8_t
+                    referenceDone = 1 as libc::c_int as u8
                 }
             } else if (*reader).referenceDirection < 0 as libc::c_int {
                 /* Read reference backwards */
@@ -365,7 +361,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     return -(1 as libc::c_int);
                 }
                 if (*reader).referenceStart <= (*reader).referenceEnd {
-                    referenceDone = 1 as libc::c_int as uint8_t
+                    referenceDone = 1 as libc::c_int as u8
                 }
             }
             if point == 0 {
@@ -373,7 +369,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
                 if (*reader).referenceDirection != 0 {
                     return -(1 as libc::c_int);
                 }
-                let mut value: uint64_t = 0;
+                let mut value: u64 = 0;
                 if ZDDecodeVariableLengthUnsigned(
                     (*reader).library,
                     &mut (*reader).polygonIndex,
@@ -383,14 +379,14 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     return -(1 as libc::c_int);
                 }
                 if value == 0 as libc::c_int as libc::c_ulong {
-                    (*reader).done = 2 as libc::c_int as uint8_t
+                    (*reader).done = 2 as libc::c_int as u8
                 } else if value == 1 as libc::c_int as libc::c_ulong {
-                    let mut diff: int32_t = 0;
+                    let mut diff: i32 = 0;
                     let mut start: i64 = 0;
                     if ZDDecodeVariableLengthUnsigned(
                         (*reader).library,
                         &mut (*reader).polygonIndex,
-                        &mut start as *mut i64 as *mut uint64_t,
+                        &mut start as *mut i64 as *mut u64,
                     ) == 0
                     {
                         return -(1 as libc::c_int);
@@ -405,10 +401,10 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     }
                     (*reader).referenceStart = (*(*reader).library)
                         .dataOffset
-                        .wrapping_add(start as uint32_t);
+                        .wrapping_add(start as u32);
                     (*reader).referenceEnd =
                         (*(*reader).library).dataOffset.wrapping_add(
-                            (start + diff as libc::c_long) as uint32_t,
+                            (start + diff as libc::c_long) as u32,
                         );
                     (*reader).referenceDirection = diff;
                     if diff < 0 as libc::c_int {
@@ -456,15 +452,15 @@ unsafe extern "C" fn ZDReaderGetPoint(
             /* Close the polygon (the closing point is not encoded) */
             (*reader).pointLat = (*reader).firstLat;
             (*reader).pointLon = (*reader).firstLon;
-            (*reader).done = 2 as libc::c_int as uint8_t
+            (*reader).done = 2 as libc::c_int as u8
         }
-        (*reader).first = 0 as libc::c_int as uint8_t;
+        (*reader).first = 0 as libc::c_int as u8;
         if !((*(*reader).library).version as libc::c_int == 0 as libc::c_int) {
             break;
         }
         (*reader).numVertices = (*reader).numVertices.wrapping_sub(1);
         if (*reader).numVertices == 0 {
-            (*reader).done = 1 as libc::c_int as uint8_t
+            (*reader).done = 1 as libc::c_int as u8
         }
         if !(diffLat == 0 && diffLon == 0) {
             break;
@@ -483,18 +479,18 @@ unsafe extern "C" fn ZDReaderGetPoint(
 }
 unsafe extern "C" fn ZDFindPolygon(
     library: &ZoneDetect,
-    mut wantedId: uint32_t,
-    mut metadataIndexPtr: *mut uint32_t,
-    mut polygonIndexPtr: *mut uint32_t,
+    mut wantedId: u32,
+    mut metadataIndexPtr: *mut u32,
+    mut polygonIndexPtr: *mut u32,
 ) -> libc::c_int {
-    let mut polygonId: uint32_t = 0 as libc::c_int as uint32_t;
-    let mut bboxIndex: uint32_t = (*library).bboxOffset;
-    let mut metadataIndex: uint32_t = 0 as libc::c_int as uint32_t;
-    let mut polygonIndex: uint32_t = 0 as libc::c_int as uint32_t;
+    let mut polygonId: u32 = 0 as libc::c_int as u32;
+    let mut bboxIndex: u32 = (*library).bboxOffset;
+    let mut metadataIndex: u32 = 0 as libc::c_int as u32;
+    let mut polygonIndex: u32 = 0 as libc::c_int as u32;
     while bboxIndex < (*library).metadataOffset {
-        let mut polygonIndexDelta: uint64_t = 0;
-        let mut metadataIndexDelta: int32_t = 0;
-        let mut tmp: int32_t = 0;
+        let mut polygonIndexDelta: u64 = 0;
+        let mut metadataIndexDelta: i32 = 0;
+        let mut tmp: i32 = 0;
         if ZDDecodeVariableLengthSigned(library, &mut bboxIndex, &mut tmp) == 0
         {
             break;
@@ -528,22 +524,22 @@ unsafe extern "C" fn ZDFindPolygon(
             break;
         }
         metadataIndex = (metadataIndex as libc::c_uint)
-            .wrapping_add(metadataIndexDelta as uint32_t)
-            as uint32_t as uint32_t;
+            .wrapping_add(metadataIndexDelta as u32)
+            as u32 as u32;
         polygonIndex = (polygonIndex as libc::c_uint)
-            .wrapping_add(polygonIndexDelta as uint32_t)
-            as uint32_t as uint32_t;
+            .wrapping_add(polygonIndexDelta as u32)
+            as u32 as u32;
         if polygonId == wantedId {
             if !metadataIndexPtr.is_null() {
                 metadataIndex = (metadataIndex as libc::c_uint)
                     .wrapping_add((*library).metadataOffset)
-                    as uint32_t as uint32_t;
+                    as u32 as u32;
                 *metadataIndexPtr = metadataIndex
             }
             if !polygonIndexPtr.is_null() {
                 polygonIndex = (polygonIndex as libc::c_uint)
                     .wrapping_add((*library).dataOffset)
-                    as uint32_t as uint32_t;
+                    as u32 as u32;
                 *polygonIndexPtr = polygonIndex
             }
             return 1 as libc::c_int;
@@ -554,18 +550,18 @@ unsafe extern "C" fn ZDFindPolygon(
 }
 unsafe extern "C" fn ZDPolygonToListInternal(
     library: &ZoneDetect,
-    mut polygonIndex: uint32_t,
+    mut polygonIndex: u32,
     mut length: *mut size_t,
-) -> *mut int32_t {
+) -> *mut i32 {
     let mut current_block: u64;
     let mut reader = Reader::new(library, polygonIndex);
     let mut listLength: size_t =
         (2 as libc::c_int * 100 as libc::c_int) as size_t;
     let mut listIndex: size_t = 0 as libc::c_int as size_t;
-    let mut list: *mut int32_t = malloc(
-        (::std::mem::size_of::<int32_t>() as libc::c_ulong)
+    let mut list: *mut i32 = malloc(
+        (::std::mem::size_of::<i32>() as libc::c_ulong)
             .wrapping_mul(listLength),
-    ) as *mut int32_t;
+    ) as *mut i32;
     if list.is_null() {
         current_block = 982749321299142201;
     } else {
@@ -577,11 +573,11 @@ unsafe extern "C" fn ZDPolygonToListInternal(
                 if !list.is_null() {
                     free(list as *mut libc::c_void);
                 }
-                return 0 as *mut int32_t;
+                return 0 as *mut i32;
             }
             _ => {
-                let mut pointLat: int32_t = 0;
-                let mut pointLon: int32_t = 0;
+                let mut pointLat: i32 = 0;
+                let mut pointLon: i32 = 0;
                 let mut result: libc::c_int =
                     ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon);
                 if result < 0 as libc::c_int {
@@ -606,9 +602,9 @@ unsafe extern "C" fn ZDPolygonToListInternal(
                         }
                         list = realloc(
                             list as *mut libc::c_void,
-                            (::std::mem::size_of::<int32_t>() as libc::c_ulong)
+                            (::std::mem::size_of::<i32>() as libc::c_ulong)
                                 .wrapping_mul(listLength),
-                        ) as *mut int32_t;
+                        ) as *mut i32;
                         if list.is_null() {
                             current_block = 982749321299142201;
                             continue;
@@ -629,17 +625,17 @@ unsafe extern "C" fn ZDPolygonToListInternal(
 #[no_mangle]
 pub unsafe extern "C" fn ZDPolygonToList(
     library: &ZoneDetect,
-    mut polygonId: uint32_t,
+    mut polygonId: u32,
     mut lengthPtr: *mut size_t,
 ) -> *mut libc::c_float {
     let mut length: size_t = 0;
-    let mut polygonIndex: uint32_t = 0;
-    let mut data: *mut int32_t = 0 as *mut int32_t;
+    let mut polygonIndex: u32 = 0;
+    let mut data: *mut i32 = 0 as *mut i32;
     let mut flData: *mut libc::c_float = 0 as *mut libc::c_float;
     if !(ZDFindPolygon(
         library,
         polygonId,
-        0 as *mut uint32_t,
+        0 as *mut u32,
         &mut polygonIndex,
     ) == 0)
     {
@@ -653,8 +649,8 @@ pub unsafe extern "C" fn ZDPolygonToList(
             if !flData.is_null() {
                 let mut i: size_t = 0 as libc::c_int as size_t;
                 while i < length {
-                    let mut lat: int32_t = *data.offset(i as isize);
-                    let mut lon: int32_t = *data.offset(
+                    let mut lat: i32 = *data.offset(i as isize);
+                    let mut lon: i32 = *data.offset(
                         i.wrapping_add(1 as libc::c_int as libc::c_ulong)
                             as isize,
                     );
@@ -692,18 +688,18 @@ pub unsafe extern "C" fn ZDPolygonToList(
 }
 unsafe extern "C" fn ZDPointInPolygon(
     mut library: &ZoneDetect,
-    mut polygonIndex: uint32_t,
-    mut latFixedPoint: int32_t,
-    mut lonFixedPoint: int32_t,
-    mut distanceSqrMin: *mut uint64_t,
+    mut polygonIndex: u32,
+    mut latFixedPoint: i32,
+    mut lonFixedPoint: i32,
+    mut distanceSqrMin: *mut u64,
 ) -> LookupResult {
-    let mut pointLat: int32_t = 0;
-    let mut pointLon: int32_t = 0;
-    let mut prevLat: int32_t = 0 as libc::c_int;
-    let mut prevLon: int32_t = 0 as libc::c_int;
+    let mut pointLat: i32 = 0;
+    let mut pointLon: i32 = 0;
+    let mut prevLat: i32 = 0 as libc::c_int;
+    let mut prevLon: i32 = 0 as libc::c_int;
     let mut prevQuadrant: libc::c_int = 0 as libc::c_int;
     let mut winding: libc::c_int = 0 as libc::c_int;
-    let mut first: uint8_t = 1 as libc::c_int as uint8_t;
+    let mut first: u8 = 1 as libc::c_int as u8;
     let mut reader = Reader::new(library, polygonIndex);
     loop {
         let mut result: libc::c_int =
@@ -717,7 +713,7 @@ unsafe extern "C" fn ZDPointInPolygon(
             /* Check if point is ON the border */
             if pointLat == latFixedPoint && pointLon == lonFixedPoint {
                 if !distanceSqrMin.is_null() {
-                    *distanceSqrMin = 0 as libc::c_int as uint64_t
+                    *distanceSqrMin = 0 as libc::c_int as u64
                 }
                 return LookupResult::OnBorderVertex;
             }
@@ -779,20 +775,20 @@ unsafe extern "C" fn ZDPointInPolygon(
                     && (onStraight != 0 || windingNeedCompare != 0)
                 {
                     if !distanceSqrMin.is_null() {
-                        *distanceSqrMin = 0 as libc::c_int as uint64_t
+                        *distanceSqrMin = 0 as libc::c_int as u64
                     }
                     return LookupResult::OnBorderSegment;
                 }
                 /* Jumped two quadrants. */
                 if windingNeedCompare != 0 {
                     /* Check if the target is on the border */
-                    let intersectLon: int32_t =
-                        ((latFixedPoint as libc::c_float - b) / a) as int32_t;
+                    let intersectLon: i32 =
+                        ((latFixedPoint as libc::c_float - b) / a) as i32;
                     if intersectLon >= lonFixedPoint - 1 as libc::c_int
                         && intersectLon <= lonFixedPoint + 1 as libc::c_int
                     {
                         if !distanceSqrMin.is_null() {
-                            *distanceSqrMin = 0 as libc::c_int as uint64_t
+                            *distanceSqrMin = 0 as libc::c_int as u64
                         }
                         return LookupResult::OnBorderSegment;
                     }
@@ -833,10 +829,10 @@ unsafe extern "C" fn ZDPointInPolygon(
                     }
                     let closestInBox: libc::c_int = ZDPointInBox(
                         pointLon,
-                        closestLon as int32_t,
+                        closestLon as i32,
                         prevLon,
                         pointLat,
-                        closestLat as int32_t,
+                        closestLat as i32,
                         prevLat,
                     );
                     let mut diffLat: i64 = 0;
@@ -856,9 +852,9 @@ unsafe extern "C" fn ZDPointInPolygon(
                         diffLon = (pointLon - lonFixedPoint) as i64
                     }
                     /* Note: lon has half scale */
-                    let mut distanceSqr: uint64_t =
-                        ((diffLat * diffLat) as uint64_t).wrapping_add(
-                            ((diffLon * diffLon) as uint64_t).wrapping_mul(
+                    let mut distanceSqr: u64 =
+                        ((diffLat * diffLat) as u64).wrapping_add(
+                            ((diffLon * diffLon) as u64).wrapping_mul(
                                 4 as libc::c_int as libc::c_ulong,
                             ),
                         );
@@ -870,7 +866,7 @@ unsafe extern "C" fn ZDPointInPolygon(
             prevQuadrant = quadrant;
             prevLat = pointLat;
             prevLon = pointLon;
-            first = 0 as libc::c_int as uint8_t
+            first = 0 as libc::c_int as u8
         }
     }
     if winding == -(4 as libc::c_int) {
@@ -886,7 +882,7 @@ unsafe extern "C" fn ZDPointInPolygon(
     }
     /* Should not happen */
     if !distanceSqrMin.is_null() {
-        *distanceSqrMin = 0 as libc::c_int as uint64_t
+        *distanceSqrMin = 0 as libc::c_int as u64
     }
     LookupResult::OnBorderSegment
 }
@@ -898,31 +894,31 @@ pub unsafe extern "C" fn ZDLookup(
     mut lon: f32,
     mut safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
-    let latFixedPoint: int32_t = ZDFloatToFixedPoint(
+    let latFixedPoint: i32 = ZDFloatToFixedPoint(
         lat,
         90 as libc::c_int as libc::c_float,
         (*library).precision as libc::c_uint,
     );
-    let lonFixedPoint: int32_t = ZDFloatToFixedPoint(
+    let lonFixedPoint: i32 = ZDFloatToFixedPoint(
         lon,
         180 as libc::c_int as libc::c_float,
         (*library).precision as libc::c_uint,
     );
-    let mut distanceSqrMin: uint64_t = -(1 as libc::c_int) as uint64_t;
+    let mut distanceSqrMin: u64 = -(1 as libc::c_int) as u64;
     /* Parse the header */
     /* Iterate over all polygons */
-    let mut bboxIndex: uint32_t = (*library).bboxOffset;
-    let mut metadataIndex: uint32_t = 0 as libc::c_int as uint32_t;
-    let mut polygonIndex: uint32_t = 0 as libc::c_int as uint32_t;
+    let mut bboxIndex: u32 = (*library).bboxOffset;
+    let mut metadataIndex: u32 = 0 as libc::c_int as u32;
+    let mut polygonIndex: u32 = 0 as libc::c_int as u32;
     let mut results = Vec::new();
-    let mut polygonId: uint32_t = 0 as libc::c_int as uint32_t;
+    let mut polygonId: u32 = 0 as libc::c_int as u32;
     while bboxIndex < (*library).metadataOffset {
-        let mut minLat: int32_t = 0;
-        let mut minLon: int32_t = 0;
-        let mut maxLat: int32_t = 0;
-        let mut maxLon: int32_t = 0;
-        let mut metadataIndexDelta: int32_t = 0;
-        let mut polygonIndexDelta: uint64_t = 0;
+        let mut minLat: i32 = 0;
+        let mut minLon: i32 = 0;
+        let mut maxLat: i32 = 0;
+        let mut maxLon: i32 = 0;
+        let mut metadataIndexDelta: i32 = 0;
+        let mut polygonIndexDelta: u64 = 0;
         if ZDDecodeVariableLengthSigned(library, &mut bboxIndex, &mut minLat)
             == 0
         {
@@ -960,11 +956,11 @@ pub unsafe extern "C" fn ZDLookup(
             break;
         }
         metadataIndex = (metadataIndex as libc::c_uint)
-            .wrapping_add(metadataIndexDelta as uint32_t)
-            as uint32_t as uint32_t;
+            .wrapping_add(metadataIndexDelta as u32)
+            as u32 as u32;
         polygonIndex = (polygonIndex as libc::c_uint)
-            .wrapping_add(polygonIndexDelta as uint32_t)
-            as uint32_t as uint32_t;
+            .wrapping_add(polygonIndexDelta as u32)
+            as u32 as u32;
         if !(latFixedPoint >= minLat) {
             break;
         }
@@ -980,7 +976,7 @@ pub unsafe extern "C" fn ZDLookup(
                 if safezone.is_some() {
                     &mut distanceSqrMin
                 } else {
-                    0 as *mut uint64_t
+                    0 as *mut u64
                 },
             );
             if lookupResult == LookupResult::ParseError {
@@ -1041,7 +1037,7 @@ pub unsafe extern "C" fn ZDLookup(
     /* Lookup metadata */
     let mut i_1: size_t = 0 as libc::c_int as size_t;
     while i_1 < results.len() as u64 {
-        let mut tmpIndex: uint32_t = (*library)
+        let mut tmpIndex: u32 = (*library)
             .metadataOffset
             .wrapping_add(results[i_1 as usize].metaId);
 
