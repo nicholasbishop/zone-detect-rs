@@ -128,7 +128,7 @@ unsafe extern "C" fn ZDFixedPointToFloat(
     value * scale
 }
 pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut index: *mut uint32_t,
     mut result: *mut uint64_t,
 ) -> libc::c_uint {
@@ -163,7 +163,7 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     i
 }
 unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut index: *mut uint32_t,
     mut result: *mut uint64_t,
 ) -> libc::c_uint {
@@ -203,7 +203,7 @@ unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> i64 {
     }
 }
 unsafe extern "C" fn ZDDecodeVariableLengthSigned(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut index: *mut uint32_t,
     mut result: *mut int32_t,
 ) -> libc::c_uint {
@@ -214,7 +214,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     retVal
 }
 pub unsafe extern "C" fn ZDParseString(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut index: *mut uint32_t,
 ) -> *mut libc::c_char {
     let mut strLength: uint64_t = 0;
@@ -483,7 +483,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
     1 as libc::c_int
 }
 unsafe extern "C" fn ZDFindPolygon(
-    mut library: *const ZoneDetect,
+    library: &ZoneDetect,
     mut wantedId: uint32_t,
     mut metadataIndexPtr: *mut uint32_t,
     mut polygonIndexPtr: *mut uint32_t,
