@@ -10,7 +10,7 @@ pub enum Error {
     #[error("IO error")]
     IoError(#[from] io::Error),
     #[error("database header is truncated")]
-    TruncatedDatabase(u64),
+    TruncatedDatabase(usize),
     #[error("invalid magic bytes")]
     InvalidMagic([u8; 3]),
     #[error("invalid version")]
@@ -76,7 +76,6 @@ impl Database {
 
         let mut db = Database {
             library: gen::ZoneDetect {
-                length: metadata.len() as u64,
                 mapping,
                 notice: String::new(),
 
@@ -105,8 +104,8 @@ impl Database {
     }
 
     fn parse_header(db: &mut gen::ZoneDetect) -> Result<()> {
-        if db.length < 7 {
-            return Err(Error::TruncatedDatabase(db.length));
+        if db.mapping.len() < 7 {
+            return Err(Error::TruncatedDatabase(db.mapping.len()));
         }
 
         let expected_magic = b"PLB";
@@ -178,8 +177,8 @@ impl Database {
         db.dataOffset += index;
 
         // Verify file length
-        let length = tmp + db.dataOffset as u64;
-        if length != db.length {
+        let length = (tmp + db.dataOffset as u64) as usize;
+        if length != db.mapping.len() {
             return Err(Error::LengthMismatch(length as usize));
         }
 

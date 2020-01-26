@@ -25,7 +25,6 @@ pub struct ZoneDetectResult {
 #[derive(Clone)]
 #[repr(C)]
 pub struct ZoneDetectOpaque {
-    pub length: u64,
     pub mapping: Vec<u8>,
     pub tableType: crate::TableType,
     pub version: u8,
@@ -127,7 +126,7 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     mut index: *mut u32,
     mut result: *mut u64,
 ) -> libc::c_uint {
-    if *index >= (*library).length as u32 {
+    if *index >= (*library).mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
     let mut value: u64 = 0 as libc::c_int as u64;
@@ -135,7 +134,7 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     let mapping: *const u8 = (*library).mapping.as_ptr();
     let buffer: *const u8 = mapping.offset(*index as isize);
     let bufferEnd: *const u8 = mapping
-        .offset((*library).length as isize)
+        .offset((*library).mapping.len() as isize)
         .offset(-(1 as libc::c_int as isize));
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     loop {
@@ -163,7 +162,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     mut result: *mut u64,
 ) -> libc::c_uint {
     let mut i: u32 = *index;
-    if *index >= (*library).length as u32 {
+    if *index >= (*library).mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
     let mapping: *const u8 = (*library).mapping.as_ptr();
