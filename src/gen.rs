@@ -166,19 +166,14 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
         return 0 as libc::c_int as libc::c_uint;
     }
     let mapping: *const u8 = (*library).mapping.as_ptr();
-    if *mapping.offset(i as isize) as libc::c_int
-        & 0x80 as libc::c_int
-        != 0
-    {
+    if *mapping.offset(i as isize) as libc::c_int & 0x80 as libc::c_int != 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
     if i == 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
     i = i.wrapping_sub(1);
-    while *mapping.offset(i as isize) as libc::c_int
-        & 0x80 as libc::c_int
-        != 0
+    while *mapping.offset(i as isize) as libc::c_int & 0x80 as libc::c_int != 0
     {
         if i == 0 {
             return 0 as libc::c_int as libc::c_uint;
@@ -238,23 +233,23 @@ pub unsafe extern "C" fn ZDParseString(
     }
     let str: *mut libc::c_char =
         malloc(strLength.wrapping_add(1 as libc::c_int as libc::c_ulong))
-        as *mut libc::c_char;
+            as *mut libc::c_char;
     let mapping: *const u8 = (*library).mapping.as_ptr();
     if !str.is_null() {
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < strLength {
-            *str.offset(i as isize) =
-                (*mapping.offset(
-                    (strOffset as libc::c_ulong).wrapping_add(i) as isize,
-                ) as libc::c_int
-                    ^ 0x80 as libc::c_int) as libc::c_char;
+            *str.offset(i as isize) = (*mapping
+                .offset((strOffset as libc::c_ulong).wrapping_add(i) as isize)
+                as libc::c_int
+                ^ 0x80 as libc::c_int)
+                as libc::c_char;
             i = i.wrapping_add(1)
         }
         *str.offset(strLength as isize) = 0 as libc::c_int as libc::c_char
     }
     if remoteStr == 0 {
-        *index = (*index as libc::c_uint).wrapping_add(strLength as u32)
-            as u32 as u32
+        *index = (*index as libc::c_uint).wrapping_add(strLength as u32) as u32
+            as u32
     }
     str
 }
@@ -294,9 +289,9 @@ unsafe extern "C" fn ZDDecodePoint(
     mut lon: *mut i32,
 ) {
     *lat = ZDDecodeUnsignedToSigned(ZDUnshuffle(point) as u64) as i32;
-    *lon = ZDDecodeUnsignedToSigned(
-        ZDUnshuffle(point >> 1 as libc::c_int) as u64
-    ) as i32;
+    *lon =
+        ZDDecodeUnsignedToSigned(ZDUnshuffle(point >> 1 as libc::c_int) as u64)
+            as i32;
 }
 
 unsafe extern "C" fn ZDReaderGetPoint(
@@ -403,10 +398,9 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     (*reader).referenceStart = (*(*reader).library)
                         .dataOffset
                         .wrapping_add(start as u32);
-                    (*reader).referenceEnd =
-                        (*(*reader).library).dataOffset.wrapping_add(
-                            (start + diff as libc::c_long) as u32,
-                        );
+                    (*reader).referenceEnd = (*(*reader).library)
+                        .dataOffset
+                        .wrapping_add((start + diff as libc::c_long) as u32);
                     (*reader).referenceDirection = diff;
                     if diff < 0 as libc::c_int {
                         (*reader).referenceStart =
@@ -633,12 +627,8 @@ pub unsafe extern "C" fn ZDPolygonToList(
     let mut polygonIndex: u32 = 0;
     let mut data: *mut i32 = 0 as *mut i32;
     let mut flData: *mut libc::c_float = 0 as *mut libc::c_float;
-    if !(ZDFindPolygon(
-        library,
-        polygonId,
-        0 as *mut u32,
-        &mut polygonIndex,
-    ) == 0)
+    if !(ZDFindPolygon(library, polygonId, 0 as *mut u32, &mut polygonIndex)
+        == 0)
     {
         length = 0 as libc::c_int as size_t;
         data = ZDPolygonToListInternal(library, polygonIndex, &mut length);
@@ -853,8 +843,8 @@ unsafe extern "C" fn ZDPointInPolygon(
                         diffLon = (pointLon - lonFixedPoint) as i64
                     }
                     /* Note: lon has half scale */
-                    let mut distanceSqr: u64 =
-                        ((diffLat * diffLat) as u64).wrapping_add(
+                    let mut distanceSqr: u64 = ((diffLat * diffLat) as u64)
+                        .wrapping_add(
                             ((diffLon * diffLon) as u64).wrapping_mul(
                                 4 as libc::c_int as libc::c_ulong,
                             ),
