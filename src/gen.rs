@@ -138,14 +138,6 @@ pub type ZoneDetect = ZoneDetectOpaque;
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-pub type ZDInternalError = libc::c_uint;
-pub const ZD_E_PARSE_HEADER: ZDInternalError = 6;
-pub const ZD_E_DB_CLOSE: ZDInternalError = 5;
-pub const ZD_E_DB_MUNMAP: ZDInternalError = 4;
-pub const ZD_E_DB_MMAP: ZDInternalError = 3;
-pub const ZD_E_DB_SEEK: ZDInternalError = 2;
-pub const ZD_E_DB_OPEN: ZDInternalError = 1;
-pub const ZD_OK: ZDInternalError = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Reader {
