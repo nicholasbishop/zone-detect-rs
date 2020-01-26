@@ -934,10 +934,10 @@ unsafe extern "C" fn ZDPointInPolygon(
 
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookup(
-    mut library: *const ZoneDetect,
-    mut lat: libc::c_float,
-    mut lon: libc::c_float,
-    mut safezone: *mut libc::c_float,
+    mut library: &ZoneDetect,
+    mut lat: f32,
+    mut lon: f32,
+    mut safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
     let latFixedPoint: int32_t = ZDFloatToFixedPoint(
         lat,
@@ -1018,7 +1018,7 @@ pub unsafe extern "C" fn ZDLookup(
                 (*library).dataOffset.wrapping_add(polygonIndex),
                 latFixedPoint,
                 lonFixedPoint,
-                if !safezone.is_null() {
+                if safezone.is_some() {
                     &mut distanceSqrMin
                 } else {
                     0 as *mut uint64_t
@@ -1099,7 +1099,7 @@ pub unsafe extern "C" fn ZDLookup(
         i_1 = i_1.wrapping_add(1)
     }
 
-    if !safezone.is_null() {
+    if let Some(safezone) = safezone {
         *safezone = sqrtf(distanceSqrMin as libc::c_float)
             * 90 as libc::c_int as libc::c_float
             / ((1 as libc::c_int)
