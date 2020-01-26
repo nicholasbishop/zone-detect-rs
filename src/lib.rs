@@ -233,6 +233,22 @@ mod tests {
     #[test]
     fn test_simple_lookup() {
         let db = Database::open("data/timezone21.bin").unwrap();
+        // Beijing
+        assert_eq!(
+            db.simple_lookup(39.9042, 116.4074).unwrap(),
+            "Asia/Shanghai"
+        );
+        // Buenos Aires
+        assert_eq!(
+            db.simple_lookup(-34.6037, -58.3816).unwrap(),
+            "America/Argentina/Buenos_Aires"
+        );
+        // Canberra
+        assert_eq!(
+            db.simple_lookup(-35.2809, 149.1300).unwrap(),
+            "Australia/Sydney"
+        );
+        // New York City
         assert_eq!(
             db.simple_lookup(40.7128, -74.0060).unwrap(),
             "America/New_York"
