@@ -80,7 +80,6 @@ pub struct ZoneDetectResult {
 pub struct ZoneDetectOpaque {
     pub fd: libc::c_int,
     pub length: off_t,
-    pub closeType: uint8_t,
     pub mapping: *const uint8_t,
     pub tableType: uint8_t,
     pub version: uint8_t,
@@ -984,100 +983,9 @@ pub unsafe extern "C" fn ZDCloseDatabase(mut library: *mut ZoneDetect) {
         if !(*library).notice.is_null() {
             free((*library).notice as *mut libc::c_void);
         }
-        if (*library).closeType as libc::c_int == 0 as libc::c_int {
-            if !(*library).mapping.is_null() &&
-                   munmap((*library).mapping as *mut libc::c_void,
-                          (*library).length as size_t) != 0 {
-                zdError(ZD_E_DB_MUNMAP, *__errno_location());
-            }
-            if (*library).fd >= 0 as libc::c_int && close((*library).fd) != 0
-               {
-                zdError(ZD_E_DB_CLOSE, *__errno_location());
-            }
-        }
-        free(library as *mut libc::c_void);
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn ZDOpenDatabaseFromMemory(mut buffer:
-                                                      *mut libc::c_void,
-                                                  mut length: size_t)
- -> *mut ZoneDetect {
-    let mut current_block: u64;
-    let library: *mut ZoneDetect =
-        malloc(::std::mem::size_of::<ZoneDetect>() as libc::c_ulong) as
-            *mut ZoneDetect;
-    if !library.is_null() {
-        memset(library as *mut libc::c_void, 0 as libc::c_int,
-               ::std::mem::size_of::<ZoneDetect>() as libc::c_ulong);
-        (*library).closeType = 1 as libc::c_int as uint8_t;
-        (*library).length = length as libc::c_long;
-        if (*library).length <= 0 as libc::c_int as libc::c_long {
-            zdError(ZD_E_DB_SEEK, *__errno_location());
-            current_block = 11037195049783199485;
-        } else {
-            (*library).mapping = buffer as *mut uint8_t;
-            /* Parse the header */
-            if ZDParseHeader(library) != 0 {
-                zdError(ZD_E_PARSE_HEADER, 0 as libc::c_int);
-                current_block = 11037195049783199485;
-            } else { current_block = 13109137661213826276; }
-        }
-        match current_block {
-            13109137661213826276 => { }
-            _ => { ZDCloseDatabase(library); return 0 as *mut ZoneDetect }
-        }
-    }
-    return library;
-}
-#[no_mangle]
-pub unsafe extern "C" fn ZDOpenDatabase(mut path: *const libc::c_char)
- -> *mut ZoneDetect {
-    let mut current_block: u64;
-    let library: *mut ZoneDetect =
-        malloc(::std::mem::size_of::<ZoneDetect>() as libc::c_ulong) as
-            *mut ZoneDetect;
-    if !library.is_null() {
-        memset(library as *mut libc::c_void, 0 as libc::c_int,
-               ::std::mem::size_of::<ZoneDetect>() as libc::c_ulong);
-        (*library).fd =
-            open(path, 0 as libc::c_int | 0o2000000 as libc::c_int);
-        if (*library).fd < 0 as libc::c_int {
-            zdError(ZD_E_DB_OPEN, *__errno_location());
-            current_block = 7022714159392939963;
-        } else {
-            (*library).length =
-                lseek((*library).fd, 0 as libc::c_int as __off_t,
-                      2 as libc::c_int);
-            if (*library).length <= 0 as libc::c_int as libc::c_long ||
-                   (*library).length > 50331648 as libc::c_int as libc::c_long
-               {
-                zdError(ZD_E_DB_SEEK, *__errno_location());
-                current_block = 7022714159392939963;
-            } else {
-                lseek((*library).fd, 0 as libc::c_int as __off_t,
-                      0 as libc::c_int);
-                (*library).mapping =
-                    mmap(0 as *mut libc::c_void, (*library).length as size_t,
-                         0x1 as libc::c_int,
-                         0x2 as libc::c_int | 0 as libc::c_int, (*library).fd,
-                         0 as libc::c_int as __off_t) as *mut uint8_t;
-                if (*library).mapping.is_null() {
-                    zdError(ZD_E_DB_MMAP, *__errno_location());
-                    current_block = 7022714159392939963;
-                } else if ZDParseHeader(library) != 0 {
-                    zdError(ZD_E_PARSE_HEADER, 0 as libc::c_int);
-                    current_block = 7022714159392939963;
-                } else { current_block = 12039483399334584727; }
-            }
-        }
-        match current_block {
-            12039483399334584727 => { }
-            _ => { ZDCloseDatabase(library); return 0 as *mut ZoneDetect }
-        }
-    }
-    return library;
-}
+
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookup(mut library: *const ZoneDetect,
                                   mut lat: libc::c_float,
