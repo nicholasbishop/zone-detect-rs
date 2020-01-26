@@ -162,6 +162,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_open() {
+        let db = Database::open("data/timezone21.bin").unwrap();
+        assert_eq!(db.handle.tableType, TableType::Timezone);
+        assert_eq!(db.handle.precision, 21);
+        assert_eq!(db.handle.fieldNames, vec![
+            "TimezoneIdPrefix".to_string(),
+            "TimezoneId".to_string(),
+            "CountryAlpha2".to_string(),
+            "CountryName".to_string(),
+        ]);
+    }
+
+    #[test]
     fn test_simple_lookup() {
         let db = Database::open("data/timezone21.bin").unwrap();
         assert_eq!(db.simple_lookup(40.7128, -74.0060).unwrap(),
