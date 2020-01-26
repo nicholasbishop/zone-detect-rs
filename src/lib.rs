@@ -117,9 +117,9 @@ impl Database {
         db.precision = unsafe { *db.mapping.offset(5) };
         let num_fields = unsafe { *db.mapping.offset(6) };
 
-        if table_type == 'T' as u8 {
+        if table_type == b'T' {
             db.tableType = TableType::Timezone;
-        } else if table_type == 'C' as u8 {
+        } else if table_type == b'C' {
             db.tableType = TableType::Country;
         } else {
             return Err(Error::InvalidTableType(table_type));
@@ -136,11 +136,11 @@ impl Database {
         for field_index in 0..num_fields {
             let name = parse_string(db, &mut index)
                 .map_err(|err| Error::InvalidFieldName(field_index, err))?;
-            db.fieldNames.push(name.into());
+            db.fieldNames.push(name);
         }
 
-        db.notice = parse_string(db, &mut index)
-            .map_err(|err| Error::InvalidNotice(err))?;
+        db.notice =
+            parse_string(db, &mut index).map_err(Error::InvalidNotice)?;
 
         // Read section sizes. Note that bboxOffset is already initialized to zero.
         let mut tmp: gen::uint64_t = 0;
@@ -199,7 +199,7 @@ impl Database {
                     None
                 }
             }
-            .map(|s| s.clone())
+            .cloned()
         } else {
             None
         }
