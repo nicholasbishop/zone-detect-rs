@@ -87,17 +87,18 @@ pub const ZD_LOOKUP_NOT_IN_ZONE: ZDLookupResult = 0;
 pub const ZD_LOOKUP_PARSE_ERROR: ZDLookupResult = -1;
 pub const ZD_LOOKUP_END: ZDLookupResult = -2;
 pub const ZD_LOOKUP_IGNORE: ZDLookupResult = -3;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct ZoneDetectResult {
     pub lookupResult: ZDLookupResult,
     pub polygonId: uint32_t,
     pub metaId: uint32_t,
-    pub numFields: uint8_t,
-    pub fieldNames: *mut *mut libc::c_char,
-    pub data: *mut *mut libc::c_char,
+    // TODO: maybe change this to &str
+    // TODO: maybe combine these two fields into a hashmap
+    pub fieldNames: Vec<String>,
+    pub data: Vec<String>,
 }
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct ZoneDetectOpaque {
     pub fd: libc::c_int,
@@ -106,9 +107,8 @@ pub struct ZoneDetectOpaque {
     pub tableType: uint8_t,
     pub version: uint8_t,
     pub precision: uint8_t,
-    pub numFields: uint8_t,
     pub notice: *mut libc::c_char,
-    pub fieldNames: *mut *mut libc::c_char,
+    pub fieldNames: Vec<String>,
     pub bboxOffset: uint32_t,
     pub metadataOffset: uint32_t,
     pub dataOffset: uint32_t,
@@ -286,7 +286,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     *result = ZDDecodeUnsignedToSigned(value) as int32_t;
     return retVal;
 }
-unsafe extern "C" fn ZDParseString(
+pub unsafe extern "C" fn ZDParseString(
     mut library: *const ZoneDetect,
     mut index: *mut uint32_t,
 ) -> *mut libc::c_char {
@@ -335,79 +335,7 @@ unsafe extern "C" fn ZDParseString(
     }
     return str;
 }
-unsafe extern "C" fn ZDParseHeader(
-    mut library: *mut ZoneDetect,
-) -> libc::c_int {
-    if (*library).length < 7 as libc::c_int as libc::c_long {
-        return -(1 as libc::c_int);
-    }
-    if memcmp(
-        (*library).mapping as *const libc::c_void,
-        b"PLB\x00" as *const u8 as *const libc::c_char as *const libc::c_void,
-        3 as libc::c_int as libc::c_ulong,
-    ) != 0
-    {
-        return -(1 as libc::c_int);
-    }
-    (*library).tableType =
-        *(*library).mapping.offset(3 as libc::c_int as isize);
-    (*library).version = *(*library).mapping.offset(4 as libc::c_int as isize);
-    (*library).precision =
-        *(*library).mapping.offset(5 as libc::c_int as isize);
-    (*library).numFields =
-        *(*library).mapping.offset(6 as libc::c_int as isize);
-    if (*library).version as libc::c_int >= 2 as libc::c_int {
-        return -(1 as libc::c_int);
-    }
-    let mut index: uint32_t = 7 as libc::c_uint;
-    (*library).fieldNames =
-        malloc(((*library).numFields as libc::c_ulong).wrapping_mul(
-            ::std::mem::size_of::<*mut libc::c_char>() as libc::c_ulong,
-        )) as *mut *mut libc::c_char;
-    let mut i: size_t = 0 as libc::c_int as size_t;
-    while i < (*library).numFields as libc::c_ulong {
-        let ref mut fresh0 = *(*library).fieldNames.offset(i as isize);
-        *fresh0 = ZDParseString(library, &mut index);
-        i = i.wrapping_add(1)
-    }
-    (*library).notice = ZDParseString(library, &mut index);
-    if (*library).notice.is_null() {
-        return -(1 as libc::c_int);
-    }
-    let mut tmp: uint64_t = 0;
-    /* Read section sizes */
-    /* By memset: library->bboxOffset = 0 */
-    if ZDDecodeVariableLengthUnsigned(library, &mut index, &mut tmp) == 0 {
-        return -(1 as libc::c_int);
-    }
-    (*library).metadataOffset =
-        (tmp as uint32_t).wrapping_add((*library).bboxOffset);
-    if ZDDecodeVariableLengthUnsigned(library, &mut index, &mut tmp) == 0 {
-        return -(1 as libc::c_int);
-    }
-    (*library).dataOffset =
-        (tmp as uint32_t).wrapping_add((*library).metadataOffset);
-    if ZDDecodeVariableLengthUnsigned(library, &mut index, &mut tmp) == 0 {
-        return -(1 as libc::c_int);
-    }
-    /* Add header size to everything */
-    (*library).bboxOffset = ((*library).bboxOffset as libc::c_uint)
-        .wrapping_add(index) as uint32_t
-        as uint32_t;
-    (*library).metadataOffset = ((*library).metadataOffset as libc::c_uint)
-        .wrapping_add(index) as uint32_t
-        as uint32_t;
-    (*library).dataOffset = ((*library).dataOffset as libc::c_uint)
-        .wrapping_add(index) as uint32_t
-        as uint32_t;
-    /* Verify file length */
-    if tmp.wrapping_add((*library).dataOffset as libc::c_ulong)
-        != (*library).length as uint32_t as libc::c_ulong
-    {
-        return -(2 as libc::c_int);
-    }
-    return 0 as libc::c_int;
-}
+
 unsafe extern "C" fn ZDPointInBox(
     mut xl: int32_t,
     mut x: int32_t,
@@ -1080,17 +1008,6 @@ unsafe extern "C" fn ZDPointInPolygon(
 #[no_mangle]
 pub unsafe extern "C" fn ZDCloseDatabase(mut library: *mut ZoneDetect) {
     if !library.is_null() {
-        if !(*library).fieldNames.is_null() {
-            let mut i: size_t = 0 as libc::c_int as size_t;
-            while i < (*library).numFields as size_t {
-                if !(*(*library).fieldNames.offset(i as isize)).is_null() {
-                    free(*(*library).fieldNames.offset(i as isize)
-                        as *mut libc::c_void);
-                }
-                i = i.wrapping_add(1)
-            }
-            free((*library).fieldNames as *mut libc::c_void);
-        }
         if !(*library).notice.is_null() {
             free((*library).notice as *mut libc::c_void);
         }
@@ -1103,7 +1020,7 @@ pub unsafe extern "C" fn ZDLookup(
     mut lat: libc::c_float,
     mut lon: libc::c_float,
     mut safezone: *mut libc::c_float,
-) -> *mut ZoneDetectResult {
+) -> Vec<ZoneDetectResult> {
     let latFixedPoint: int32_t = ZDFloatToFixedPoint(
         lat,
         90 as libc::c_int as libc::c_float,
@@ -1121,12 +1038,7 @@ pub unsafe extern "C" fn ZDLookup(
     let mut bboxIndex: uint32_t = (*library).bboxOffset;
     let mut metadataIndex: uint32_t = 0 as libc::c_int as uint32_t;
     let mut polygonIndex: uint32_t = 0 as libc::c_int as uint32_t;
-    let mut results: *mut ZoneDetectResult =
-        malloc(::std::mem::size_of::<ZoneDetectResult>() as libc::c_ulong)
-            as *mut ZoneDetectResult;
-    if results.is_null() {
-        return 0 as *mut ZoneDetectResult;
-    }
+    let mut results = Vec::new();
     let mut polygonId: uint32_t = 0 as libc::c_int as uint32_t;
     while bboxIndex < (*library).metadataOffset {
         let mut minLat: int32_t = 0;
@@ -1203,28 +1115,13 @@ pub unsafe extern "C" fn ZDLookup(
             if lookupResult as libc::c_int
                 != ZD_LOOKUP_NOT_IN_ZONE as libc::c_int
             {
-                let newResults: *mut ZoneDetectResult =
-                    realloc(
-                        results as *mut libc::c_void,
-                        (::std::mem::size_of::<ZoneDetectResult>()
-                            as libc::c_ulong)
-                            .wrapping_mul(numResults.wrapping_add(
-                                2 as libc::c_int as libc::c_ulong,
-                            )),
-                    ) as *mut ZoneDetectResult;
-                if newResults.is_null() {
-                    break;
-                }
-                results = newResults;
-                (*results.offset(numResults as isize)).polygonId = polygonId;
-                (*results.offset(numResults as isize)).metaId = metadataIndex;
-                (*results.offset(numResults as isize)).numFields =
-                    (*library).numFields;
-                let ref mut fresh3 =
-                    (*results.offset(numResults as isize)).fieldNames;
-                *fresh3 = (*library).fieldNames;
-                (*results.offset(numResults as isize)).lookupResult =
-                    lookupResult;
+                results.push(ZoneDetectResult {
+                    polygonId,
+                    metaId: metadataIndex,
+                    fieldNames: (*library).fieldNames.clone(),
+                    lookupResult,
+                    data: Vec::new(),
+                });
                 numResults = numResults.wrapping_add(1)
             }
         }
@@ -1237,12 +1134,10 @@ pub unsafe extern "C" fn ZDLookup(
         let mut overrideResult: ZDLookupResult = ZD_LOOKUP_IGNORE;
         let mut j: size_t = i;
         while j < numResults {
-            if (*results.offset(i as isize)).metaId
-                == (*results.offset(j as isize)).metaId
-            {
+            if results[i as usize].metaId == results[j as usize].metaId {
                 let mut tmpResult: ZDLookupResult =
-                    (*results.offset(j as isize)).lookupResult;
-                (*results.offset(j as isize)).lookupResult = ZD_LOOKUP_IGNORE;
+                    results[j as usize].lookupResult;
+                results[j as usize].lookupResult = ZD_LOOKUP_IGNORE;
                 /* This is the same result. Is it an exclusion zone? */
                 if tmpResult as libc::c_int == ZD_LOOKUP_IN_ZONE as libc::c_int
                 {
@@ -1259,9 +1154,9 @@ pub unsafe extern "C" fn ZDLookup(
             j = j.wrapping_add(1)
         }
         if overrideResult as libc::c_int != ZD_LOOKUP_IGNORE as libc::c_int {
-            (*results.offset(i as isize)).lookupResult = overrideResult
+            results[i as usize].lookupResult = overrideResult
         } else if insideSum != 0 {
-            (*results.offset(i as isize)).lookupResult = ZD_LOOKUP_IN_ZONE
+            results[i as usize].lookupResult = ZD_LOOKUP_IN_ZONE
         }
         i = i.wrapping_add(1)
     }
@@ -1269,11 +1164,10 @@ pub unsafe extern "C" fn ZDLookup(
     let mut newNumResults: size_t = 0 as libc::c_int as size_t;
     let mut i_0: size_t = 0 as libc::c_int as size_t;
     while i_0 < numResults {
-        if (*results.offset(i_0 as isize)).lookupResult as libc::c_int
+        if results[i_0 as usize].lookupResult as libc::c_int
             != ZD_LOOKUP_IGNORE as libc::c_int
         {
-            *results.offset(newNumResults as isize) =
-                *results.offset(i_0 as isize);
+            results[newNumResults as usize] = results[i_0 as usize].clone();
             newNumResults = newNumResults.wrapping_add(1)
         }
         i_0 = i_0.wrapping_add(1)
@@ -1284,30 +1178,19 @@ pub unsafe extern "C" fn ZDLookup(
     while i_1 < numResults {
         let mut tmpIndex: uint32_t = (*library)
             .metadataOffset
-            .wrapping_add((*results.offset(i_1 as isize)).metaId);
-        let ref mut fresh4 = (*results.offset(i_1 as isize)).data;
-        *fresh4 = malloc(((*library).numFields as libc::c_ulong).wrapping_mul(
-            ::std::mem::size_of::<*mut libc::c_char>() as libc::c_ulong,
-        )) as *mut *mut libc::c_char;
-        if !(*results.offset(i_1 as isize)).data.is_null() {
-            let mut j_0: size_t = 0 as libc::c_int as size_t;
-            while j_0 < (*library).numFields as libc::c_ulong {
-                let ref mut fresh5 =
-                    *(*results.offset(i_1 as isize)).data.offset(j_0 as isize);
-                *fresh5 = ZDParseString(library, &mut tmpIndex);
-                j_0 = j_0.wrapping_add(1)
-            }
+            .wrapping_add(results[i_1 as usize].metaId);
+
+        let data = &mut results[i_1 as usize].data;
+        data.resize((*library).fieldNames.len(), String::new());
+        let mut j_0: size_t = 0 as libc::c_int as size_t;
+        while j_0 < (*library).fieldNames.len() as libc::c_ulong {
+            data[j_0 as usize] = crate::parse_string(&*library, &mut tmpIndex)
+                .expect("failed to get field data");
+            j_0 = j_0.wrapping_add(1)
         }
         i_1 = i_1.wrapping_add(1)
     }
-    /* Write end marker */
-    (*results.offset(numResults as isize)).lookupResult = ZD_LOOKUP_END;
-    (*results.offset(numResults as isize)).numFields =
-        0 as libc::c_int as uint8_t;
-    let ref mut fresh6 = (*results.offset(numResults as isize)).fieldNames;
-    *fresh6 = 0 as *mut *mut libc::c_char;
-    let ref mut fresh7 = (*results.offset(numResults as isize)).data;
-    *fresh7 = 0 as *mut *mut libc::c_char;
+
     if !safezone.is_null() {
         *safezone = sqrtf(distanceSqrMin as libc::c_float)
             * 90 as libc::c_int as libc::c_float
@@ -1315,38 +1198,11 @@ pub unsafe extern "C" fn ZDLookup(
                 << (*library).precision as libc::c_int - 1 as libc::c_int)
                 as libc::c_float
     }
+
+    // TODO: we've removed the end marker, so the length is probably off by one
     return results;
 }
-#[no_mangle]
-pub unsafe extern "C" fn ZDFreeResults(mut results: *mut ZoneDetectResult) {
-    let mut index: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    if results.is_null() {
-        return;
-    }
-    while (*results.offset(index as isize)).lookupResult as libc::c_int
-        != ZD_LOOKUP_END as libc::c_int
-    {
-        if !(*results.offset(index as isize)).data.is_null() {
-            let mut i: size_t = 0 as libc::c_int as size_t;
-            while i < (*results.offset(index as isize)).numFields as size_t {
-                if !(*(*results.offset(index as isize)).data.offset(i as isize))
-                    .is_null()
-                {
-                    free(
-                        *(*results.offset(index as isize))
-                            .data
-                            .offset(i as isize)
-                            as *mut libc::c_void,
-                    );
-                }
-                i = i.wrapping_add(1)
-            }
-            free((*results.offset(index as isize)).data as *mut libc::c_void);
-        }
-        index = index.wrapping_add(1)
-    }
-    free(results as *mut libc::c_void);
-}
+
 #[no_mangle]
 pub unsafe extern "C" fn ZDGetNotice(
     mut library: *const ZoneDetect,
@@ -1437,140 +1293,4 @@ pub unsafe extern "C" fn ZDSetErrorHandler(
 ) -> libc::c_int {
     zdErrorHandler = handler;
     return 0 as libc::c_int;
-}
-#[no_mangle]
-pub unsafe extern "C" fn ZDHelperSimpleLookupString(
-    mut library: *const ZoneDetect,
-    mut lat: libc::c_float,
-    mut lon: libc::c_float,
-) -> *mut libc::c_char {
-    let mut strings: [*mut libc::c_char; 2] = [0 as *mut libc::c_char; 2];
-    let mut length: size_t = 0;
-    let mut current_block: u64;
-    let mut result: *mut ZoneDetectResult =
-        ZDLookup(library, lat, lon, 0 as *mut libc::c_float);
-    if result.is_null() {
-        return 0 as *mut libc::c_char;
-    }
-    let mut output: *mut libc::c_char = 0 as *mut libc::c_char;
-    if !((*result.offset(0 as libc::c_int as isize)).lookupResult
-        as libc::c_int
-        == ZD_LOOKUP_END as libc::c_int)
-    {
-        strings = [0 as *mut libc::c_char, 0 as *mut libc::c_char];
-        let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        while i
-            < (*result.offset(0 as libc::c_int as isize)).numFields
-                as libc::c_uint
-        {
-            if !(*(*result.offset(0 as libc::c_int as isize))
-                .fieldNames
-                .offset(i as isize))
-            .is_null()
-                && !(*(*result.offset(0 as libc::c_int as isize))
-                    .data
-                    .offset(i as isize))
-                .is_null()
-            {
-                if (*library).tableType as libc::c_int == 'T' as i32 {
-                    if strcmp(
-                        *(*result.offset(0 as libc::c_int as isize))
-                            .fieldNames
-                            .offset(i as isize),
-                        b"TimezoneIdPrefix\x00" as *const u8
-                            as *const libc::c_char,
-                    ) == 0
-                    {
-                        strings[0 as libc::c_int as usize] = *(*result
-                            .offset(0 as libc::c_int as isize))
-                        .data
-                        .offset(i as isize)
-                    }
-                    if strcmp(
-                        *(*result.offset(0 as libc::c_int as isize))
-                            .fieldNames
-                            .offset(i as isize),
-                        b"TimezoneId\x00" as *const u8 as *const libc::c_char,
-                    ) == 0
-                    {
-                        strings[1 as libc::c_int as usize] = *(*result
-                            .offset(0 as libc::c_int as isize))
-                        .data
-                        .offset(i as isize)
-                    }
-                }
-                if (*library).tableType as libc::c_int == 'C' as i32 {
-                    if strcmp(
-                        *(*result.offset(0 as libc::c_int as isize))
-                            .fieldNames
-                            .offset(i as isize),
-                        b"Name\x00" as *const u8 as *const libc::c_char,
-                    ) == 0
-                    {
-                        strings[0 as libc::c_int as usize] = *(*result
-                            .offset(0 as libc::c_int as isize))
-                        .data
-                        .offset(i as isize)
-                    }
-                }
-            }
-            i = i.wrapping_add(1)
-        }
-        length = 0 as libc::c_int as size_t;
-        let mut i_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        loop {
-            if !((i_0 as libc::c_ulong)
-                < (::std::mem::size_of::<[*mut libc::c_char; 2]>()
-                    as libc::c_ulong)
-                    .wrapping_div(::std::mem::size_of::<*mut libc::c_char>()
-                        as libc::c_ulong))
-            {
-                current_block = 2569451025026770673;
-                break;
-            }
-            if !strings[i_0 as usize].is_null() {
-                let mut partLength: size_t = strlen(strings[i_0 as usize]);
-                if partLength > 512 as libc::c_int as libc::c_ulong {
-                    current_block = 4718390366384453560;
-                    break;
-                }
-                length = (length as libc::c_ulong).wrapping_add(partLength)
-                    as size_t as size_t
-            }
-            i_0 = i_0.wrapping_add(1)
-        }
-        match current_block {
-            4718390366384453560 => {}
-            _ => {
-                if !(length == 0 as libc::c_int as libc::c_ulong) {
-                    length = (length as libc::c_ulong)
-                        .wrapping_add(1 as libc::c_int as libc::c_ulong)
-                        as size_t as size_t;
-                    output = malloc(length) as *mut libc::c_char;
-                    *output.offset(0 as libc::c_int as isize) =
-                        0 as libc::c_int as libc::c_char;
-                    let mut i_1: libc::c_uint =
-                        0 as libc::c_int as libc::c_uint;
-                    while (i_1 as libc::c_ulong)
-                        < (::std::mem::size_of::<[*mut libc::c_char; 2]>()
-                            as libc::c_ulong)
-                            .wrapping_div(
-                                ::std::mem::size_of::<*mut libc::c_char>()
-                                    as libc::c_ulong,
-                            )
-                    {
-                        if !strings[i_1 as usize].is_null() {
-                            strcat(
-                                output.offset(strlen(output) as isize),
-                                strings[i_1 as usize],
-                            );
-                        }
-                        i_1 = i_1.wrapping_add(1)
-                    }
-                }
-            }
-        }
-    }
-    ZDFreeResults(result);
-    return output;
 }

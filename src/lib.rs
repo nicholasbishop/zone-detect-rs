@@ -2,8 +2,8 @@ mod gen;
 
 use memmap::{Mmap, MmapOptions};
 use std::{
-    convert::TryInto, fs::File, io, os::unix::io::AsRawFd, path::Path, ptr,
-    slice,
+    convert::TryInto, ffi::CStr, fs::File, io, os::unix::io::AsRawFd,
+    path::Path, ptr, slice, str::Utf8Error,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -16,9 +16,21 @@ pub enum Error {
     InvalidMagic([u8; 3]),
     #[error("invalid version")]
     InvalidVersion(u8),
+    #[error("invalid field name")]
+    InvalidFieldName(u8, Utf8Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn parse_string(
+    db: &gen::ZoneDetect,
+    index: &mut gen::uint32_t,
+) -> std::result::Result<String, Utf8Error> {
+    let raw = unsafe { gen::ZDParseString(db, index) };
+    let c_str = unsafe { CStr::from_ptr(raw) };
+    let s = c_str.to_str()?;
+    Ok(s.into())
+}
 
 pub struct Database {
     file: File,
@@ -33,8 +45,6 @@ impl Database {
         let metadata = file.metadata()?;
         let mapping = unsafe { MmapOptions::new().map(&file) }?;
 
-        // TODO: ZDParseHeader
-
         let mut db = Database {
             handle: gen::ZoneDetect {
                 fd,
@@ -45,9 +55,8 @@ impl Database {
                 tableType: 0,
                 version: 0,
                 precision: 0,
-                numFields: 0,
                 notice: ptr::null_mut(),
-                fieldNames: ptr::null_mut(),
+                fieldNames: Vec::new(),
                 bboxOffset: 0,
                 metadataOffset: 0,
                 dataOffset: 0,
@@ -78,13 +87,31 @@ impl Database {
         db.tableType = unsafe { *db.mapping.offset(3) };
         db.version = unsafe { *db.mapping.offset(4) };
         db.precision = unsafe { *db.mapping.offset(5) };
-        db.numFields = unsafe { *db.mapping.offset(6) };
+        let num_fields = unsafe { *db.mapping.offset(6) };
 
         if db.version >= 2 {
             return Err(Error::InvalidVersion(db.version));
         }
 
+        // Start reading at byte 7
+        let mut index = 7;
+
+        db.fieldNames.reserve(num_fields as usize);
+        for field_index in 0..num_fields {
+            let name = parse_string(db, &mut index)
+                .map_err(|err| Error::InvalidFieldName(field_index, err))?;
+            db.fieldNames.push(name.into());
+        }
+
         Ok(())
+    }
+
+    pub fn simple_lookup(&self, lat: f32, lon: f32) -> Option<String> {
+        let result = unsafe {
+            gen::ZDLookup(&self.handle, lat, lon, std::ptr::null_mut())
+        };
+        // TODO
+        None
     }
 }
 
