@@ -4,8 +4,6 @@ extern "C" {
     #[no_mangle]
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     #[no_mangle]
-    fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
     fn free(__ptr: *mut libc::c_void);
     #[no_mangle]
     fn strlen(_: *const libc::c_char) -> libc::c_ulong;
@@ -543,77 +541,25 @@ unsafe extern "C" fn ZDFindPolygon(
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn ZDPolygonToListInternal(
+fn ZDPolygonToListInternal(
     library: &ZoneDetect,
     mut polygonIndex: u32,
-    mut length: *mut size_t,
-) -> *mut i32 {
-    let mut current_block: u64;
+) -> Option<Vec<i32>> {
     let mut reader = Reader::new(library, polygonIndex);
-    let mut listLength: size_t =
-        (2 as libc::c_int * 100 as libc::c_int) as size_t;
-    let mut listIndex: size_t = 0 as libc::c_int as size_t;
-    let mut list: *mut i32 = malloc(
-        (::std::mem::size_of::<i32>() as libc::c_ulong)
-            .wrapping_mul(listLength),
-    ) as *mut i32;
-    if list.is_null() {
-        current_block = 982749321299142201;
-    } else {
-        current_block = 6873731126896040597;
-    }
+    let mut list = Vec::new();
     loop {
-        match current_block {
-            982749321299142201 => {
-                if !list.is_null() {
-                    free(list as *mut libc::c_void);
-                }
-                return 0 as *mut i32;
-            }
-            _ => {
-                let mut pointLat: i32 = 0;
-                let mut pointLon: i32 = 0;
-                let mut result: libc::c_int =
-                    ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon);
-                if result < 0 as libc::c_int {
-                    current_block = 982749321299142201;
-                    continue;
-                }
-                if result == 0 as libc::c_int {
-                    if !length.is_null() {
-                        *length = listIndex
-                    }
-                    return list;
-                } else {
-                    if listIndex >= listLength {
-                        listLength = (listLength as libc::c_ulong)
-                            .wrapping_mul(2 as libc::c_int as libc::c_ulong)
-                            as size_t
-                            as size_t;
-                        if listLength >= 1048576 as libc::c_int as libc::c_ulong
-                        {
-                            current_block = 982749321299142201;
-                            continue;
-                        }
-                        list = realloc(
-                            list as *mut libc::c_void,
-                            (::std::mem::size_of::<i32>() as libc::c_ulong)
-                                .wrapping_mul(listLength),
-                        ) as *mut i32;
-                        if list.is_null() {
-                            current_block = 982749321299142201;
-                            continue;
-                        }
-                    }
-                    let fresh1 = listIndex;
-                    listIndex = listIndex.wrapping_add(1);
-                    *list.offset(fresh1 as isize) = pointLat;
-                    let fresh2 = listIndex;
-                    listIndex = listIndex.wrapping_add(1);
-                    *list.offset(fresh2 as isize) = pointLon;
-                    current_block = 6873731126896040597;
-                }
-            }
+        let mut pointLat: i32 = 0;
+        let mut pointLon: i32 = 0;
+        let mut result: libc::c_int =
+            unsafe { ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon) };
+        if result < 0 as libc::c_int {
+            return None;
+        }
+        if result == 0 as libc::c_int {
+            return Some(list);
+        } else {
+            list.push(pointLat);
+            list.push(pointLon);
         }
     }
 }
@@ -625,14 +571,11 @@ pub unsafe extern "C" fn ZDPolygonToList(
 ) -> *mut libc::c_float {
     let mut length: size_t = 0;
     let mut polygonIndex: u32 = 0;
-    let mut data: *mut i32 = 0 as *mut i32;
     let mut flData: *mut libc::c_float = 0 as *mut libc::c_float;
     if !(ZDFindPolygon(library, polygonId, 0 as *mut u32, &mut polygonIndex)
         == 0)
     {
-        length = 0 as libc::c_int as size_t;
-        data = ZDPolygonToListInternal(library, polygonIndex, &mut length);
-        if !data.is_null() {
+        if let Some(data) = ZDPolygonToListInternal(library, polygonIndex) {
             flData = malloc(
                 (::std::mem::size_of::<libc::c_float>() as libc::c_ulong)
                     .wrapping_mul(length),
@@ -640,11 +583,11 @@ pub unsafe extern "C" fn ZDPolygonToList(
             if !flData.is_null() {
                 let mut i: size_t = 0 as libc::c_int as size_t;
                 while i < length {
-                    let mut lat: i32 = *data.offset(i as isize);
-                    let mut lon: i32 = *data.offset(
+                    let mut lat: i32 = data[i as usize];
+                    let mut lon: i32 = data[
                         i.wrapping_add(1 as libc::c_int as libc::c_ulong)
-                            as isize,
-                    );
+                            as usize
+                    ];
                     *flData.offset(i as isize) = ZDFixedPointToFloat(
                         lat,
                         90 as libc::c_int as libc::c_float,
@@ -668,9 +611,6 @@ pub unsafe extern "C" fn ZDPolygonToList(
                 return flData;
             }
         }
-    }
-    if !data.is_null() {
-        free(data as *mut libc::c_void);
     }
     if !flData.is_null() {
         free(flData as *mut libc::c_void);
