@@ -25,17 +25,17 @@ extern "C" {
     #[no_mangle]
     fn sqrtf(_: libc::c_float) -> libc::c_float;
 }
-pub type size_t = libc::c_ulong;
-pub type __uint8_t = libc::c_uchar;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
-pub type int32_t = __int32_t;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
+type size_t = libc::c_ulong;
+type __uint8_t = libc::c_uchar;
+type __int32_t = libc::c_int;
+type __uint32_t = libc::c_uint;
+type __int64_t = libc::c_long;
+type __uint64_t = libc::c_ulong;
+type int32_t = __int32_t;
+type int64_t = __int64_t;
+type uint8_t = __uint8_t;
+type uint32_t = __uint32_t;
+type uint64_t = __uint64_t;
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {

@@ -56,7 +56,7 @@ pub enum LookupResult {
 
 pub fn parse_string(
     db: &gen::ZoneDetect,
-    index: &mut gen::uint32_t,
+    index: &mut u32,
 ) -> std::result::Result<String, Utf8Error> {
     let raw = unsafe { gen::ZDParseString(db, index) };
     let c_str = unsafe { CStr::from_ptr(raw) };
@@ -155,7 +155,7 @@ impl Database {
             parse_string(db, &mut index).map_err(Error::InvalidNotice)?;
 
         // Read section sizes. Note that bboxOffset is already initialized to zero.
-        let mut tmp: gen::uint64_t = 0;
+        let mut tmp: u64 = 0;
         if unsafe {
             gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp)
         } == 0
