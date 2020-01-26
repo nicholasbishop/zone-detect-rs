@@ -561,57 +561,45 @@ fn ZDPolygonToListInternal(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZDPolygonToList(
+pub unsafe fn ZDPolygonToList(
     library: &ZoneDetect,
     mut polygonId: u32,
     mut lengthPtr: *mut size_t,
-) -> *mut libc::c_float {
+) -> Option<Vec<f32>> {
     let mut length: size_t = 0;
     let mut polygonIndex: u32 = 0;
-    let mut flData: *mut libc::c_float = 0 as *mut libc::c_float;
     if !(ZDFindPolygon(library, polygonId, 0 as *mut u32, &mut polygonIndex)
         == 0)
     {
         if let Some(data) = ZDPolygonToListInternal(library, polygonIndex) {
-            flData = malloc(
-                (::std::mem::size_of::<libc::c_float>() as libc::c_ulong)
-                    .wrapping_mul(length),
-            ) as *mut libc::c_float;
-            if !flData.is_null() {
-                let mut i: size_t = 0 as libc::c_int as size_t;
-                while i < length {
-                    let mut lat: i32 = data[i as usize];
-                    let mut lon: i32 = data[i
-                        .wrapping_add(1 as libc::c_int as libc::c_ulong)
-                        as usize];
-                    *flData.offset(i as isize) = ZDFixedPointToFloat(
-                        lat,
-                        90 as libc::c_int as libc::c_float,
-                        (*library).precision as libc::c_uint,
-                    );
-                    *flData.offset(
-                        i.wrapping_add(1 as libc::c_int as libc::c_ulong)
-                            as isize,
-                    ) = ZDFixedPointToFloat(
-                        lon,
-                        180 as libc::c_int as libc::c_float,
-                        (*library).precision as libc::c_uint,
-                    );
-                    i = (i as libc::c_ulong)
-                        .wrapping_add(2 as libc::c_int as libc::c_ulong)
-                        as size_t as size_t
-                }
-                if !lengthPtr.is_null() {
-                    *lengthPtr = length
-                }
-                return flData;
+            let mut flData = Vec::with_capacity(data.len());
+            let mut i: size_t = 0 as libc::c_int as size_t;
+            while i < length {
+                let mut lat: i32 = data[i as usize];
+                let mut lon: i32 = data[i
+                    .wrapping_add(1 as libc::c_int as libc::c_ulong)
+                    as usize];
+                flData.push(ZDFixedPointToFloat(
+                    lat,
+                    90 as libc::c_int as libc::c_float,
+                    (*library).precision as libc::c_uint,
+                ));
+                flData.push(ZDFixedPointToFloat(
+                    lon,
+                    180 as libc::c_int as libc::c_float,
+                    (*library).precision as libc::c_uint,
+                ));
+                i = (i as libc::c_ulong)
+                    .wrapping_add(2 as libc::c_int as libc::c_ulong)
+                    as size_t as size_t
             }
+            if !lengthPtr.is_null() {
+                *lengthPtr = length
+            }
+            return Some(flData);
         }
     }
-    if !flData.is_null() {
-        free(flData as *mut libc::c_void);
-    }
-    0 as *mut libc::c_float
+    None
 }
 unsafe extern "C" fn ZDPointInPolygon(
     mut library: &ZoneDetect,
