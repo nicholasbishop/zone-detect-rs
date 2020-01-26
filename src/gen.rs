@@ -1117,7 +1117,9 @@ pub unsafe extern "C" fn ZDLookup(
                 results.push(ZoneDetectResult {
                     polygonId,
                     metaId: metadataIndex,
-                    fields: std::collections::HashMap::with_capacity((*library).fieldNames.len()),
+                    fields: std::collections::HashMap::with_capacity(
+                        (*library).fieldNames.len(),
+                    ),
                     lookupResult,
                 });
                 numResults = numResults.wrapping_add(1)

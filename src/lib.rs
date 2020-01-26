@@ -127,11 +127,27 @@ impl Database {
     }
 
     pub fn simple_lookup(&self, lat: f32, lon: f32) -> Option<String> {
-        let result = unsafe {
+        let results = unsafe {
             gen::ZDLookup(&self.handle, lat, lon, std::ptr::null_mut())
         };
-        // TODO
-        None
+
+        if let Some(result) = results.first() {
+            match self.handle.tableType {
+                TableType::Country => result.fields.get("Name"),
+                TableType::Timezone => {
+                    if let Some(prefix) = result.fields.get("TimezoneIdPrefix")
+                    {
+                        if let Some(id) = result.fields.get("TimezoneId") {
+                            return Some(format!("{}{}", prefix, id));
+                        }
+                    }
+                    None
+                }
+            }
+            .map(|s| s.clone())
+        } else {
+            None
+        }
     }
 }
 
