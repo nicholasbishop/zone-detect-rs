@@ -94,7 +94,6 @@ pub struct ZoneDetectResult {
     pub polygonId: uint32_t,
     pub metaId: uint32_t,
     // TODO: maybe change this to &str
-    // TODO: maybe combine these two fields into a hashmap
     pub fields: std::collections::HashMap<String, String>,
 }
 #[derive(Clone)]
