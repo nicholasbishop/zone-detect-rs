@@ -26,16 +26,10 @@ extern "C" {
     fn sqrtf(_: libc::c_float) -> libc::c_float;
 }
 type size_t = libc::c_ulong;
-type __uint8_t = libc::c_uchar;
-type __int32_t = libc::c_int;
-type __uint32_t = libc::c_uint;
-type __int64_t = libc::c_long;
-type __uint64_t = libc::c_ulong;
-type int32_t = __int32_t;
-type int64_t = __int64_t;
-type uint8_t = __uint8_t;
-type uint32_t = __uint32_t;
-type uint64_t = __uint64_t;
+type int32_t = i32;
+type uint8_t = u8;
+type uint32_t = u32;
+type uint64_t = u64;
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
@@ -194,11 +188,11 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     let mut i2: uint32_t = i;
     ZDDecodeVariableLengthUnsigned(library, &mut i2, result)
 }
-unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> int64_t {
+unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> i64 {
     if value & 1 as libc::c_int as libc::c_ulong != 0 {
-        -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as int64_t)
+        -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64)
     } else {
-        value.wrapping_div(2 as libc::c_int as libc::c_ulong) as int64_t
+        value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64
     }
 }
 unsafe extern "C" fn ZDDecodeVariableLengthSigned(
@@ -399,11 +393,11 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     (*reader).done = 2 as libc::c_int as uint8_t
                 } else if value == 1 as libc::c_int as libc::c_ulong {
                     let mut diff: int32_t = 0;
-                    let mut start: int64_t = 0;
+                    let mut start: i64 = 0;
                     if ZDDecodeVariableLengthUnsigned(
                         (*reader).library,
                         &mut (*reader).polygonIndex,
-                        &mut start as *mut int64_t as *mut uint64_t,
+                        &mut start as *mut i64 as *mut uint64_t,
                     ) == 0
                     {
                         return -(1 as libc::c_int);
@@ -880,21 +874,21 @@ unsafe extern "C" fn ZDPointInPolygon(
                         closestLat as int32_t,
                         prevLat,
                     );
-                    let mut diffLat: int64_t = 0;
-                    let mut diffLon: int64_t = 0;
+                    let mut diffLat: i64 = 0;
+                    let mut diffLon: i64 = 0;
                     if closestInBox != 0 {
                         /* Calculate squared distance to segment. */
                         diffLat = (closestLat - latFixedPoint as libc::c_float)
-                            as int64_t;
+                            as i64;
                         diffLon = (closestLon - lonFixedPoint as libc::c_float)
-                            as int64_t
+                            as i64
                     } else {
                         /*
                          * Calculate squared distance to vertices
                          * It is enough to check the current point since the polygon is closed.
                          */
-                        diffLat = (pointLat - latFixedPoint) as int64_t;
-                        diffLon = (pointLon - lonFixedPoint) as int64_t
+                        diffLat = (pointLat - latFixedPoint) as i64;
+                        diffLon = (pointLon - lonFixedPoint) as i64
                     }
                     /* Note: lon has half scale */
                     let mut distanceSqr: uint64_t =
