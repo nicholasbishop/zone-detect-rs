@@ -1,9 +1,6 @@
 mod gen;
 
-use std::{
-    convert::TryInto, ffi::CStr, fs::File, io::{self, Read}, path::Path, 
-    str::Utf8Error,
-};
+use std::{convert::TryInto, ffi::CStr, fs, io, path::Path, str::Utf8Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -69,17 +66,15 @@ pub struct Database {
 
 impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Database> {
-        let mut file = File::open(path)?;
-        let metadata = file.metadata()?;
-        let mut mapping = Vec::with_capacity(metadata.len() as usize);
-        file.read_to_end(&mut mapping)?;
+        let mapping = fs::read(path)?;
+        Self::from_vec(mapping)
+    }
 
+    pub fn from_vec(mapping: Vec<u8>) -> Result<Database> {
         let mut db = Database {
             library: gen::ZoneDetect {
                 mapping,
                 notice: String::new(),
-
-                // Set the rest to zero for now
                 tableType: TableType::Country,
                 version: 0,
                 precision: 0,
@@ -92,8 +87,6 @@ impl Database {
         Self::parse_header(&mut db.library)?;
         Ok(db)
     }
-
-    // TODO: ZDOpenDatabaseFromMemory
 
     pub fn table_type(&self) -> TableType {
         self.library.tableType
