@@ -5,8 +5,6 @@ extern "C" {
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     #[no_mangle]
     fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
 }
 type size_t = libc::c_ulong;
 #[derive(Clone, Debug)]
