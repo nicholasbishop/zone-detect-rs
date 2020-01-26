@@ -1,7 +1,10 @@
 mod gen;
 
 use memmap::{Mmap, MmapOptions};
-use std::{convert::TryInto, fs::File, io, os::unix::io::AsRawFd, path::Path, ptr, slice};
+use std::{
+    convert::TryInto, fs::File, io, os::unix::io::AsRawFd, path::Path, ptr,
+    slice,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -62,9 +65,12 @@ impl Database {
         }
 
         let expected_magic = b"PLB";
-        let actual_magic = unsafe { slice::from_raw_parts(db.mapping, expected_magic.len()) };
+        let actual_magic =
+            unsafe { slice::from_raw_parts(db.mapping, expected_magic.len()) };
         if actual_magic != expected_magic {
-            return Err(Error::InvalidMagic(actual_magic.try_into().unwrap_or([0; 3])));
+            return Err(Error::InvalidMagic(
+                actual_magic.try_into().unwrap_or([0; 3]),
+            ));
         }
 
         Ok(())
@@ -82,7 +88,5 @@ mod tests {
     //use super::*;
 
     #[test]
-    fn test_open() {
-        
-    }
+    fn test_open() {}
 }
