@@ -16,8 +16,16 @@ pub enum Error {
     InvalidMagic([u8; 3]),
     #[error("invalid version")]
     InvalidVersion(u8),
+    #[error("invalid table type")]
+    InvalidTableType(u8),
     #[error("invalid field name")]
     InvalidFieldName(u8, Utf8Error),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TableType {
+    Country,
+    Timezone,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -52,7 +60,7 @@ impl Database {
                 mapping: mapping.as_ptr(),
 
                 // Set the rest to zero for now
-                tableType: 0,
+                tableType: TableType::Country,
                 version: 0,
                 precision: 0,
                 notice: ptr::null_mut(),
@@ -70,6 +78,10 @@ impl Database {
 
     // TODO: ZDOpenDatabaseFromMemory
 
+    pub fn table_type(&self) -> TableType {
+        self.handle.tableType
+    }
+
     fn parse_header(db: &mut gen::ZoneDetect) -> Result<()> {
         if db.length < 7 {
             return Err(Error::TruncatedDatabase(db.length));
@@ -84,10 +96,18 @@ impl Database {
             ));
         }
 
-        db.tableType = unsafe { *db.mapping.offset(3) };
+        let table_type = unsafe { *db.mapping.offset(3) };
         db.version = unsafe { *db.mapping.offset(4) };
         db.precision = unsafe { *db.mapping.offset(5) };
         let num_fields = unsafe { *db.mapping.offset(6) };
+
+        if table_type == 'T' as u8 {
+            db.tableType = TableType::Timezone;
+        } else if table_type == 'C' as u8 {
+            db.tableType = TableType::Country;
+        } else {
+            return Err(Error::InvalidTableType(table_type));
+        }
 
         if db.version >= 2 {
             return Err(Error::InvalidVersion(db.version));

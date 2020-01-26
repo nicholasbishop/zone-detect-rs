@@ -104,7 +104,7 @@ pub struct ZoneDetectOpaque {
     pub fd: libc::c_int,
     pub length: off_t,
     pub mapping: *const uint8_t,
-    pub tableType: uint8_t,
+    pub tableType: crate::TableType,
     pub version: uint8_t,
     pub precision: uint8_t,
     pub notice: *mut libc::c_char,
@@ -1208,12 +1208,6 @@ pub unsafe extern "C" fn ZDGetNotice(
     mut library: *const ZoneDetect,
 ) -> *const libc::c_char {
     return (*library).notice;
-}
-#[no_mangle]
-pub unsafe extern "C" fn ZDGetTableType(
-    mut library: *const ZoneDetect,
-) -> uint8_t {
-    return (*library).tableType;
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookupResultToString(
