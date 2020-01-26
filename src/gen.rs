@@ -21,49 +21,9 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
     #[no_mangle]
-    fn memcmp(
-        _: *const libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn strcat(
-        _: *mut libc::c_char,
-        _: *const libc::c_char,
-    ) -> *mut libc::c_char;
-    #[no_mangle]
-    fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    #[no_mangle]
     fn strlen(_: *const libc::c_char) -> libc::c_ulong;
     #[no_mangle]
     fn sqrtf(_: libc::c_float) -> libc::c_float;
-    #[no_mangle]
-    fn __errno_location() -> *mut libc::c_int;
-    #[no_mangle]
-    fn mmap(
-        __addr: *mut libc::c_void,
-        __len: size_t,
-        __prot: libc::c_int,
-        __flags: libc::c_int,
-        __fd: libc::c_int,
-        __offset: __off_t,
-    ) -> *mut libc::c_void;
-    #[no_mangle]
-    fn munmap(__addr: *mut libc::c_void, __len: size_t) -> libc::c_int;
-    #[no_mangle]
-    fn open(
-        __file: *const libc::c_char,
-        __oflag: libc::c_int,
-        _: ...
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn lseek(
-        __fd: libc::c_int,
-        __offset: __off_t,
-        __whence: libc::c_int,
-    ) -> __off_t;
-    #[no_mangle]
-    fn close(__fd: libc::c_int) -> libc::c_int;
 }
 pub type size_t = libc::c_ulong;
 pub type __uint8_t = libc::c_uchar;
