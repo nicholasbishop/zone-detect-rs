@@ -81,7 +81,7 @@ pub struct ZoneDetectOpaque {
     pub fd: libc::c_int,
     pub length: off_t,
     pub closeType: uint8_t,
-    pub mapping: *mut uint8_t,
+    pub mapping: *const uint8_t,
     pub tableType: uint8_t,
     pub version: uint8_t,
     pub precision: uint8_t,
@@ -185,8 +185,8 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(mut library:
     }
     let mut value: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let buffer: *mut uint8_t = (*library).mapping.offset(*index as isize);
-    let bufferEnd: *mut uint8_t =
+    let buffer: *const uint8_t = (*library).mapping.offset(*index as isize);
+    let bufferEnd: *const uint8_t =
         (*library).mapping.offset((*library).length as
                                       isize).offset(-(1 as libc::c_int as
                                                           isize));
