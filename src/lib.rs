@@ -1,8 +1,7 @@
 mod gen;
 
-use memmap::{Mmap, MmapOptions};
 use std::{
-    convert::TryInto, ffi::CStr, fs::File, io, path::Path, slice,
+    convert::TryInto, ffi::CStr, fs::File, io::{self, Read}, path::Path, 
     str::Utf8Error,
 };
 
@@ -65,21 +64,20 @@ pub fn parse_string(
 }
 
 pub struct Database {
-    file: File,
-    mapping: Option<Mmap>,
     library: gen::ZoneDetect,
 }
 
 impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Database> {
-        let file = File::open(path)?;
+        let mut file = File::open(path)?;
         let metadata = file.metadata()?;
-        let mapping = unsafe { MmapOptions::new().map(&file) }?;
+        let mut mapping = Vec::with_capacity(metadata.len() as usize);
+        file.read_to_end(&mut mapping)?;
 
         let mut db = Database {
             library: gen::ZoneDetect {
                 length: metadata.len() as u64,
-                mapping: mapping.as_ptr(),
+                mapping,
                 notice: String::new(),
 
                 // Set the rest to zero for now
@@ -91,8 +89,6 @@ impl Database {
                 metadataOffset: 0,
                 dataOffset: 0,
             },
-            file,
-            mapping: Some(mapping),
         };
         Self::parse_header(&mut db.library)?;
         Ok(db)
@@ -114,18 +110,17 @@ impl Database {
         }
 
         let expected_magic = b"PLB";
-        let actual_magic =
-            unsafe { slice::from_raw_parts(db.mapping, expected_magic.len()) };
+        let actual_magic = &db.mapping[0..3];
         if actual_magic != expected_magic {
             return Err(Error::InvalidMagic(
                 actual_magic.try_into().unwrap_or([0; 3]),
             ));
         }
 
-        let table_type = unsafe { *db.mapping.offset(3) };
-        db.version = unsafe { *db.mapping.offset(4) };
-        db.precision = unsafe { *db.mapping.offset(5) };
-        let num_fields = unsafe { *db.mapping.offset(6) };
+        let table_type = db.mapping[3];
+        db.version = db.mapping[4];
+        db.precision = db.mapping[5];
+        let num_fields = db.mapping[6];
 
         if table_type == b'T' {
             db.tableType = TableType::Timezone;

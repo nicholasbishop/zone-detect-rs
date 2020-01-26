@@ -26,7 +26,7 @@ pub struct ZoneDetectResult {
 #[repr(C)]
 pub struct ZoneDetectOpaque {
     pub length: u64,
-    pub mapping: *const u8,
+    pub mapping: Vec<u8>,
     pub tableType: crate::TableType,
     pub version: u8,
     pub precision: u8,
@@ -132,9 +132,9 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     }
     let mut value: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let buffer: *const u8 = (*library).mapping.offset(*index as isize);
-    let bufferEnd: *const u8 = (*library)
-        .mapping
+    let mapping: *const u8 = (*library).mapping.as_ptr();
+    let buffer: *const u8 = mapping.offset(*index as isize);
+    let bufferEnd: *const u8 = mapping
         .offset((*library).length as isize)
         .offset(-(1 as libc::c_int as isize));
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -166,7 +166,8 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     if *index >= (*library).length as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
-    if *(*library).mapping.offset(i as isize) as libc::c_int
+    let mapping: *const u8 = (*library).mapping.as_ptr();
+    if *mapping.offset(i as isize) as libc::c_int
         & 0x80 as libc::c_int
         != 0
     {
@@ -176,7 +177,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
         return 0 as libc::c_int as libc::c_uint;
     }
     i = i.wrapping_sub(1);
-    while *(*library).mapping.offset(i as isize) as libc::c_int
+    while *mapping.offset(i as isize) as libc::c_int
         & 0x80 as libc::c_int
         != 0
     {
@@ -238,12 +239,13 @@ pub unsafe extern "C" fn ZDParseString(
     }
     let str: *mut libc::c_char =
         malloc(strLength.wrapping_add(1 as libc::c_int as libc::c_ulong))
-            as *mut libc::c_char;
+        as *mut libc::c_char;
+    let mapping: *const u8 = (*library).mapping.as_ptr();
     if !str.is_null() {
         let mut i: size_t = 0 as libc::c_int as size_t;
         while i < strLength {
             *str.offset(i as isize) =
-                (*(*library).mapping.offset(
+                (*mapping.offset(
                     (strOffset as libc::c_ulong).wrapping_add(i) as isize,
                 ) as libc::c_int
                     ^ 0x80 as libc::c_int) as libc::c_char;
