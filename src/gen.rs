@@ -87,7 +87,7 @@ pub const ZD_LOOKUP_NOT_IN_ZONE: ZDLookupResult = 0;
 pub const ZD_LOOKUP_PARSE_ERROR: ZDLookupResult = -1;
 pub const ZD_LOOKUP_END: ZDLookupResult = -2;
 pub const ZD_LOOKUP_IGNORE: ZDLookupResult = -3;
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
     pub lookupResult: ZDLookupResult,
@@ -1030,7 +1030,6 @@ pub unsafe extern "C" fn ZDLookup(
         180 as libc::c_int as libc::c_float,
         (*library).precision as libc::c_uint,
     );
-    let mut numResults: size_t = 0 as libc::c_int as size_t;
     let mut distanceSqrMin: uint64_t = -(1 as libc::c_int) as uint64_t;
     /* Parse the header */
     /* Iterate over all polygons */
@@ -1122,18 +1121,17 @@ pub unsafe extern "C" fn ZDLookup(
                     ),
                     lookupResult,
                 });
-                numResults = numResults.wrapping_add(1)
             }
         }
         polygonId = polygonId.wrapping_add(1)
     }
     /* Clean up results */
     let mut i: size_t = 0 as libc::c_int as size_t;
-    while i < numResults {
+    while i < results.len() as u64 {
         let mut insideSum: libc::c_int = 0 as libc::c_int;
         let mut overrideResult: ZDLookupResult = ZD_LOOKUP_IGNORE;
         let mut j: size_t = i;
-        while j < numResults {
+        while j < results.len() as u64 {
             if results[i as usize].metaId == results[j as usize].metaId {
                 let mut tmpResult: ZDLookupResult =
                     results[j as usize].lookupResult;
@@ -1163,7 +1161,7 @@ pub unsafe extern "C" fn ZDLookup(
     /* Remove zones to ignore */
     let mut newNumResults: size_t = 0 as libc::c_int as size_t;
     let mut i_0: size_t = 0 as libc::c_int as size_t;
-    while i_0 < numResults {
+    while i_0 < results.len() as u64 {
         if results[i_0 as usize].lookupResult as libc::c_int
             != ZD_LOOKUP_IGNORE as libc::c_int
         {
@@ -1172,10 +1170,9 @@ pub unsafe extern "C" fn ZDLookup(
         }
         i_0 = i_0.wrapping_add(1)
     }
-    numResults = newNumResults;
     /* Lookup metadata */
     let mut i_1: size_t = 0 as libc::c_int as size_t;
-    while i_1 < numResults {
+    while i_1 < results.len() as u64 {
         let mut tmpIndex: uint32_t = (*library)
             .metadataOffset
             .wrapping_add(results[i_1 as usize].metaId);
