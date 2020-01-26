@@ -183,10 +183,10 @@ unsafe extern "C" fn ZDFloatToFixedPoint(
     mut precision: libc::c_uint,
 ) -> int32_t {
     let inputScaled: libc::c_float = input / scale;
-    return (inputScaled
+    (inputScaled
         * ((1 as libc::c_int)
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as libc::c_float) as int32_t;
+            as libc::c_float) as int32_t
 }
 unsafe extern "C" fn ZDFixedPointToFloat(
     mut input: int32_t,
@@ -197,7 +197,7 @@ unsafe extern "C" fn ZDFixedPointToFloat(
         / ((1 as libc::c_int)
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
             as libc::c_float;
-    return value * scale;
+    value * scale
 }
 pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     mut library: *const ZoneDetect,
@@ -232,7 +232,7 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     i = i.wrapping_add(1);
     *result = value;
     *index = (*index as libc::c_uint).wrapping_add(i) as uint32_t as uint32_t;
-    return i;
+    i
 }
 unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     mut library: *const ZoneDetect,
@@ -265,14 +265,14 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     *index = i;
     i = i.wrapping_add(1);
     let mut i2: uint32_t = i;
-    return ZDDecodeVariableLengthUnsigned(library, &mut i2, result);
+    ZDDecodeVariableLengthUnsigned(library, &mut i2, result)
 }
 unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: uint64_t) -> int64_t {
-    return if value & 1 as libc::c_int as libc::c_ulong != 0 {
+    if value & 1 as libc::c_int as libc::c_ulong != 0 {
         -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as int64_t)
     } else {
         value.wrapping_div(2 as libc::c_int as libc::c_ulong) as int64_t
-    };
+    }
 }
 unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     mut library: *const ZoneDetect,
@@ -283,7 +283,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     let retVal: libc::c_uint =
         ZDDecodeVariableLengthUnsigned(library, index, &mut value);
     *result = ZDDecodeUnsignedToSigned(value) as int32_t;
-    return retVal;
+    retVal
 }
 pub unsafe extern "C" fn ZDParseString(
     mut library: *const ZoneDetect,
@@ -332,7 +332,7 @@ pub unsafe extern "C" fn ZDParseString(
         *index = (*index as libc::c_uint).wrapping_add(strLength as uint32_t)
             as uint32_t as uint32_t
     }
-    return str;
+    str
 }
 
 unsafe extern "C" fn ZDPointInBox(
@@ -348,7 +348,7 @@ unsafe extern "C" fn ZDPointInBox(
             return 1 as libc::c_int;
         }
     }
-    return 0 as libc::c_int;
+    0 as libc::c_int
 }
 unsafe extern "C" fn ZDUnshuffle(mut w: uint64_t) -> uint32_t {
     w &= 0x5555555555555555 as libc::c_long as libc::c_ulong;
@@ -362,7 +362,7 @@ unsafe extern "C" fn ZDUnshuffle(mut w: uint64_t) -> uint32_t {
         & 0xffff0000ffff as libc::c_long as libc::c_ulong;
     w = (w | w >> 16 as libc::c_int)
         & 0xffffffff as libc::c_uint as libc::c_ulong;
-    return w as uint32_t;
+    w as uint32_t
 }
 unsafe extern "C" fn ZDDecodePoint(
     mut point: uint64_t,
@@ -565,7 +565,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
     if !pointLon.is_null() {
         *pointLon = (*reader).pointLon
     }
-    return 1 as libc::c_int;
+    1 as libc::c_int
 }
 unsafe extern "C" fn ZDFindPolygon(
     mut library: *const ZoneDetect,
@@ -636,7 +636,7 @@ unsafe extern "C" fn ZDFindPolygon(
         }
         polygonId = polygonId.wrapping_add(1)
     }
-    return 0 as libc::c_int;
+    0 as libc::c_int
 }
 unsafe extern "C" fn ZDPolygonToListInternal(
     mut library: *const ZoneDetect,
@@ -788,7 +788,7 @@ pub unsafe extern "C" fn ZDPolygonToList(
     if !flData.is_null() {
         free(flData as *mut libc::c_void);
     }
-    return 0 as *mut libc::c_float;
+    0 as *mut libc::c_float
 }
 unsafe extern "C" fn ZDPointInPolygon(
     mut library: *const ZoneDetect,
@@ -1002,7 +1002,7 @@ unsafe extern "C" fn ZDPointInPolygon(
     if !distanceSqrMin.is_null() {
         *distanceSqrMin = 0 as libc::c_int as uint64_t
     }
-    return ZD_LOOKUP_ON_BORDER_SEGMENT;
+    ZD_LOOKUP_ON_BORDER_SEGMENT
 }
 
 #[no_mangle]
@@ -1189,7 +1189,7 @@ pub unsafe extern "C" fn ZDLookup(
     }
 
     // TODO: we've removed the end marker, so the length is probably off by one
-    return results;
+    results
 }
 
 #[no_mangle]
@@ -1215,7 +1215,7 @@ pub unsafe extern "C" fn ZDLookupResultToString(
         }
         _ => {}
     }
-    return b"Unknown\x00" as *const u8 as *const libc::c_char;
+    b"Unknown\x00" as *const u8 as *const libc::c_char
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZDGetErrorString(
@@ -1260,7 +1260,7 @@ pub unsafe extern "C" fn ZDGetErrorString(
             );
         }
     }
-    return b"\x00" as *const u8 as *const libc::c_char;
+    b"\x00" as *const u8 as *const libc::c_char
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZDSetErrorHandler(
@@ -1269,5 +1269,5 @@ pub unsafe extern "C" fn ZDSetErrorHandler(
     >,
 ) -> libc::c_int {
     zdErrorHandler = handler;
-    return 0 as libc::c_int;
+    0 as libc::c_int
 }
