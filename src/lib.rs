@@ -22,6 +22,16 @@ pub enum Error {
     InvalidFieldName(u8, Utf8Error),
     #[error("invalid notice")]
     InvalidNotice(Utf8Error),
+    #[error("invalid metadata offset")]
+    InvalidMetadataOffset,
+    #[error("invalid data offset")]
+    InvalidDataOffset,
+    // TODO: I'm not actually sure what this offset is supposed to be,
+    // calling it padding for now
+    #[error("invalid padding offset")]
+    InvalidPaddingOffset,
+    #[error("length mismatch")]
+    LengthMismatch(usize),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -132,6 +142,42 @@ impl Database {
         db.notice = parse_string(db, &mut index)
             .map_err(|err| Error::InvalidNotice(err))?;
 
+        // Read section sizes. Note that bboxOffset is already initialized to zero.
+        let mut tmp: gen::uint64_t = 0;
+        if unsafe {
+            gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp)
+        } == 0
+        {
+            return Err(Error::InvalidMetadataOffset);
+        }
+        db.metadataOffset = tmp as u32 + db.bboxOffset;
+
+        if unsafe {
+            gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp)
+        } == 0
+        {
+            return Err(Error::InvalidDataOffset);
+        }
+        db.dataOffset = tmp as u32 + db.metadataOffset;
+
+        if unsafe {
+            gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp)
+        } == 0
+        {
+            return Err(Error::InvalidPaddingOffset);
+        }
+
+        // Add header size to everything
+        db.bboxOffset += index;
+        db.metadataOffset += index;
+        db.dataOffset += index;
+
+        // Verify file length
+        let length = (tmp + db.dataOffset as u64) as i64;
+        if length != db.length {
+            return Err(Error::LengthMismatch(length as usize));
+        }
+
         Ok(())
     }
 
@@ -167,6 +213,9 @@ mod tests {
     #[test]
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
+        assert_eq!(db.library.bboxOffset, 288);
+        assert_eq!(db.library.metadataOffset, 33429);
+        assert_eq!(db.library.dataOffset, 42557);
         assert_eq!(db.library.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
         assert_eq!(db.library.tableType, TableType::Timezone);
         assert_eq!(db.library.precision, 21);

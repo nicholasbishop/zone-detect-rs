@@ -199,7 +199,7 @@ unsafe extern "C" fn ZDFixedPointToFloat(
             as libc::c_float;
     return value * scale;
 }
-unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
+pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     mut library: *const ZoneDetect,
     mut index: *mut uint32_t,
     mut result: *mut uint64_t,
