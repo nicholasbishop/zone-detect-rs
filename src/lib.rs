@@ -194,9 +194,7 @@ impl Database {
     }
 
     pub fn simple_lookup(&self, lat: f32, lon: f32) -> Option<String> {
-        let results = unsafe {
-            gen::ZDLookup(&self.library, lat, lon, None)
-        };
+        let results = unsafe { gen::ZDLookup(&self.library, lat, lon, None) };
 
         if let Some(result) = results.first() {
             match self.library.tableType {

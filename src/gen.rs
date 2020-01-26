@@ -859,8 +859,8 @@ unsafe extern "C" fn ZDPointInPolygon(
                         /* Calculate squared distance to segment. */
                         diffLat = (closestLat - latFixedPoint as libc::c_float)
                             as i64;
-                        diffLon = (closestLon - lonFixedPoint as libc::c_float)
-                            as i64
+                        diffLon =
+                            (closestLon - lonFixedPoint as libc::c_float) as i64
                     } else {
                         /*
                          * Calculate squared distance to vertices
@@ -1026,8 +1026,7 @@ pub unsafe extern "C" fn ZDLookup(
                 /* This is the same result. Is it an exclusion zone? */
                 if tmpResult == LookupResult::InZone {
                     insideSum += 1
-                } else if tmpResult == LookupResult::InExcludedZone
-                {
+                } else if tmpResult == LookupResult::InExcludedZone {
                     insideSum -= 1
                 } else {
                     /* If on the bodrder then the final result is on the border */
@@ -1047,8 +1046,7 @@ pub unsafe extern "C" fn ZDLookup(
     let mut newNumResults: size_t = 0 as libc::c_int as size_t;
     let mut i_0: size_t = 0 as libc::c_int as size_t;
     while i_0 < results.len() as u64 {
-        if results[i_0 as usize].lookupResult != LookupResult::Ignore
-        {
+        if results[i_0 as usize].lookupResult != LookupResult::Ignore {
             results[newNumResults as usize] = results[i_0 as usize].clone();
             newNumResults = newNumResults.wrapping_add(1)
         }
