@@ -78,19 +78,10 @@ pub type uint8_t = __uint8_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type off_t = __off_t;
-pub type ZDLookupResult = libc::c_int;
-pub const ZD_LOOKUP_ON_BORDER_SEGMENT: ZDLookupResult = 4;
-pub const ZD_LOOKUP_ON_BORDER_VERTEX: ZDLookupResult = 3;
-pub const ZD_LOOKUP_IN_EXCLUDED_ZONE: ZDLookupResult = 2;
-pub const ZD_LOOKUP_IN_ZONE: ZDLookupResult = 1;
-pub const ZD_LOOKUP_NOT_IN_ZONE: ZDLookupResult = 0;
-pub const ZD_LOOKUP_PARSE_ERROR: ZDLookupResult = -1;
-pub const ZD_LOOKUP_END: ZDLookupResult = -2;
-pub const ZD_LOOKUP_IGNORE: ZDLookupResult = -3;
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
-    pub lookupResult: ZDLookupResult,
+    pub lookupResult: LookupResult,
     pub polygonId: uint32_t,
     pub metaId: uint32_t,
     // TODO: maybe change this to &str
@@ -112,6 +103,7 @@ pub struct ZoneDetectOpaque {
     pub dataOffset: uint32_t,
 }
 pub type ZoneDetect = ZoneDetectOpaque;
+use crate::LookupResult;
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
  * All rights reserved.
@@ -773,7 +765,7 @@ unsafe extern "C" fn ZDPointInPolygon(
     mut latFixedPoint: int32_t,
     mut lonFixedPoint: int32_t,
     mut distanceSqrMin: *mut uint64_t,
-) -> ZDLookupResult {
+) -> LookupResult {
     let mut pointLat: int32_t = 0;
     let mut pointLon: int32_t = 0;
     let mut prevLat: int32_t = 0 as libc::c_int;
@@ -800,7 +792,7 @@ unsafe extern "C" fn ZDPointInPolygon(
         let mut result: libc::c_int =
             ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon);
         if result < 0 as libc::c_int {
-            return ZD_LOOKUP_PARSE_ERROR;
+            return LookupResult::ParseError;
         } else {
             if result == 0 as libc::c_int {
                 break;
@@ -810,7 +802,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                 if !distanceSqrMin.is_null() {
                     *distanceSqrMin = 0 as libc::c_int as uint64_t
                 }
-                return ZD_LOOKUP_ON_BORDER_VERTEX;
+                return LookupResult::OnBorderVertex;
             }
             /* Find quadrant */
             let mut quadrant: libc::c_int = 0;
@@ -872,7 +864,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                     if !distanceSqrMin.is_null() {
                         *distanceSqrMin = 0 as libc::c_int as uint64_t
                     }
-                    return ZD_LOOKUP_ON_BORDER_SEGMENT;
+                    return LookupResult::OnBorderSegment;
                 }
                 /* Jumped two quadrants. */
                 if windingNeedCompare != 0 {
@@ -885,7 +877,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                         if !distanceSqrMin.is_null() {
                             *distanceSqrMin = 0 as libc::c_int as uint64_t
                         }
-                        return ZD_LOOKUP_ON_BORDER_SEGMENT;
+                        return LookupResult::OnBorderSegment;
                     }
                     /* Ok, it's not. In which direction did we go round the target? */
                     let sign: libc::c_int = if intersectLon < lonFixedPoint {
@@ -965,13 +957,13 @@ unsafe extern "C" fn ZDPointInPolygon(
         }
     }
     if winding == -(4 as libc::c_int) {
-        return ZD_LOOKUP_IN_ZONE;
+        return LookupResult::InZone;
     } else {
         if winding == 4 as libc::c_int {
-            return ZD_LOOKUP_IN_EXCLUDED_ZONE;
+            return LookupResult::InExcludedZone;
         } else {
             if winding == 0 as libc::c_int {
-                return ZD_LOOKUP_NOT_IN_ZONE;
+                return LookupResult::NotInZone;
             }
         }
     }
@@ -979,7 +971,7 @@ unsafe extern "C" fn ZDPointInPolygon(
     if !distanceSqrMin.is_null() {
         *distanceSqrMin = 0 as libc::c_int as uint64_t
     }
-    ZD_LOOKUP_ON_BORDER_SEGMENT
+    LookupResult::OnBorderSegment
 }
 
 #[no_mangle]
@@ -1063,7 +1055,7 @@ pub unsafe extern "C" fn ZDLookup(
             && lonFixedPoint >= minLon
             && lonFixedPoint <= maxLon
         {
-            let lookupResult: ZDLookupResult = ZDPointInPolygon(
+            let lookupResult = ZDPointInPolygon(
                 library,
                 (*library).dataOffset.wrapping_add(polygonIndex),
                 latFixedPoint,
@@ -1074,14 +1066,10 @@ pub unsafe extern "C" fn ZDLookup(
                     0 as *mut uint64_t
                 },
             );
-            if lookupResult as libc::c_int
-                == ZD_LOOKUP_PARSE_ERROR as libc::c_int
-            {
+            if lookupResult == LookupResult::ParseError {
                 break;
             }
-            if lookupResult as libc::c_int
-                != ZD_LOOKUP_NOT_IN_ZONE as libc::c_int
-            {
+            if lookupResult != LookupResult::NotInZone {
                 results.push(ZoneDetectResult {
                     polygonId,
                     metaId: metadataIndex,
@@ -1098,19 +1086,16 @@ pub unsafe extern "C" fn ZDLookup(
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < results.len() as u64 {
         let mut insideSum: libc::c_int = 0 as libc::c_int;
-        let mut overrideResult: ZDLookupResult = ZD_LOOKUP_IGNORE;
+        let mut overrideResult = LookupResult::Ignore;
         let mut j: size_t = i;
         while j < results.len() as u64 {
             if results[i as usize].metaId == results[j as usize].metaId {
-                let mut tmpResult: ZDLookupResult =
-                    results[j as usize].lookupResult;
-                results[j as usize].lookupResult = ZD_LOOKUP_IGNORE;
+                let mut tmpResult = results[j as usize].lookupResult;
+                results[j as usize].lookupResult = LookupResult::Ignore;
                 /* This is the same result. Is it an exclusion zone? */
-                if tmpResult as libc::c_int == ZD_LOOKUP_IN_ZONE as libc::c_int
-                {
+                if tmpResult == LookupResult::InZone {
                     insideSum += 1
-                } else if tmpResult as libc::c_int
-                    == ZD_LOOKUP_IN_EXCLUDED_ZONE as libc::c_int
+                } else if tmpResult == LookupResult::InExcludedZone
                 {
                     insideSum -= 1
                 } else {
@@ -1120,10 +1105,10 @@ pub unsafe extern "C" fn ZDLookup(
             }
             j = j.wrapping_add(1)
         }
-        if overrideResult as libc::c_int != ZD_LOOKUP_IGNORE as libc::c_int {
+        if overrideResult != LookupResult::Ignore {
             results[i as usize].lookupResult = overrideResult
         } else if insideSum != 0 {
-            results[i as usize].lookupResult = ZD_LOOKUP_IN_ZONE
+            results[i as usize].lookupResult = LookupResult::InZone
         }
         i = i.wrapping_add(1)
     }
@@ -1131,8 +1116,7 @@ pub unsafe extern "C" fn ZDLookup(
     let mut newNumResults: size_t = 0 as libc::c_int as size_t;
     let mut i_0: size_t = 0 as libc::c_int as size_t;
     while i_0 < results.len() as u64 {
-        if results[i_0 as usize].lookupResult as libc::c_int
-            != ZD_LOOKUP_IGNORE as libc::c_int
+        if results[i_0 as usize].lookupResult != LookupResult::Ignore
         {
             results[newNumResults as usize] = results[i_0 as usize].clone();
             newNumResults = newNumResults.wrapping_add(1)
@@ -1167,30 +1151,4 @@ pub unsafe extern "C" fn ZDLookup(
 
     // TODO: we've removed the end marker, so the length is probably off by one
     results
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ZDLookupResultToString(
-    mut result: ZDLookupResult,
-) -> *const libc::c_char {
-    match result as libc::c_int {
-        -3 => return b"Ignore\x00" as *const u8 as *const libc::c_char,
-        -2 => return b"End\x00" as *const u8 as *const libc::c_char,
-        -1 => return b"Parsing error\x00" as *const u8 as *const libc::c_char,
-        0 => return b"Not in zone\x00" as *const u8 as *const libc::c_char,
-        1 => return b"In zone\x00" as *const u8 as *const libc::c_char,
-        2 => {
-            return b"In excluded zone\x00" as *const u8 as *const libc::c_char
-        }
-        3 => {
-            return b"Target point is border vertex\x00" as *const u8
-                as *const libc::c_char
-        }
-        4 => {
-            return b"Target point is on border\x00" as *const u8
-                as *const libc::c_char
-        }
-        _ => {}
-    }
-    b"Unknown\x00" as *const u8 as *const libc::c_char
 }

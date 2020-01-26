@@ -42,6 +42,18 @@ pub enum TableType {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LookupResult {
+    Ignore = -3,
+    End = -2,
+    ParseError = -1,
+    NotInZone = 0,
+    InZone = 1,
+    InExcludedZone = 2,
+    OnBorderVertex = 3,
+    OnBorderSegment = 4,
+}
+
 pub fn parse_string(
     db: &gen::ZoneDetect,
     index: &mut gen::uint32_t,
