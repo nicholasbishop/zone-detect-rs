@@ -7,8 +7,6 @@ extern "C" {
     fn free(__ptr: *mut libc::c_void);
     #[no_mangle]
     fn strlen(_: *const libc::c_char) -> libc::c_ulong;
-    #[no_mangle]
-    fn sqrtf(_: libc::c_float) -> libc::c_float;
 }
 type size_t = libc::c_ulong;
 #[derive(Clone, Debug)]
@@ -550,8 +548,9 @@ fn ZDPolygonToListInternal(
     loop {
         let mut pointLat: i32 = 0;
         let mut pointLon: i32 = 0;
-        let mut result: libc::c_int =
-            unsafe { ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon) };
+        let mut result: libc::c_int = unsafe {
+            ZDReaderGetPoint(&mut reader, &mut pointLat, &mut pointLon)
+        };
         if result < 0 as libc::c_int {
             return None;
         }
@@ -584,10 +583,9 @@ pub unsafe extern "C" fn ZDPolygonToList(
                 let mut i: size_t = 0 as libc::c_int as size_t;
                 while i < length {
                     let mut lat: i32 = data[i as usize];
-                    let mut lon: i32 = data[
-                        i.wrapping_add(1 as libc::c_int as libc::c_ulong)
-                            as usize
-                    ];
+                    let mut lon: i32 = data[i
+                        .wrapping_add(1 as libc::c_int as libc::c_ulong)
+                        as usize];
                     *flData.offset(i as isize) = ZDFixedPointToFloat(
                         lat,
                         90 as libc::c_int as libc::c_float,
@@ -984,7 +982,7 @@ pub unsafe extern "C" fn ZDLookup(
     }
 
     if let Some(safezone) = safezone {
-        *safezone = sqrtf(distanceSqrMin as libc::c_float)
+        *safezone = (distanceSqrMin as f32).sqrt()
             * 90 as libc::c_int as libc::c_float
             / ((1 as libc::c_int)
                 << (*library).precision as libc::c_int - 1 as libc::c_int)
