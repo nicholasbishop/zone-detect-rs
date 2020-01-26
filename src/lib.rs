@@ -199,6 +199,18 @@ impl Database {
             None
         }
     }
+
+    pub fn lookup(
+        &self,
+        lat: f32,
+        lon: f32,
+    ) -> (Vec<gen::ZoneDetectResult>, f32) {
+        let mut safezone: f32 = 0.0;
+        let results = unsafe {
+            gen::ZDLookup(&self.library, lat, lon, Some(&mut safezone))
+        };
+        (results, safezone)
+    }
 }
 
 #[cfg(test)]
