@@ -1217,51 +1217,7 @@ pub unsafe extern "C" fn ZDLookupResultToString(
     }
     b"Unknown\x00" as *const u8 as *const libc::c_char
 }
-#[no_mangle]
-pub unsafe extern "C" fn ZDGetErrorString(
-    mut errZD: libc::c_int,
-) -> *const libc::c_char {
-    match errZD as ZDInternalError as libc::c_uint {
-        0 => {}
-        1 => {
-            return b"could not open database file\x00" as *const u8
-                as *const libc::c_char
-        }
-        2 => {
-            return b"could not retrieve database file size\x00" as *const u8
-                as *const libc::c_char
-        }
-        3 => {
-            return b"could not map database file to system memory\x00"
-                as *const u8 as *const libc::c_char
-        }
-        4 => {
-            return b"could not unmap database\x00" as *const u8
-                as *const libc::c_char
-        }
-        5 => {
-            return b"could not close database file\x00" as *const u8
-                as *const libc::c_char
-        }
-        6 => {
-            return b"could not parse database header\x00" as *const u8
-                as *const libc::c_char
-        }
-        _ => {
-            __assert_fail(
-                b"0\x00" as *const u8 as *const libc::c_char,
-                b"/home/nbishop/src/tzlookup/c/zonedetect.c\x00" as *const u8
-                    as *const libc::c_char,
-                1095 as libc::c_int as libc::c_uint,
-                (*::std::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
-                    b"const char *ZDGetErrorString(int)\x00",
-                ))
-                .as_ptr(),
-            );
-        }
-    }
-    b"\x00" as *const u8 as *const libc::c_char
-}
+
 #[no_mangle]
 pub unsafe extern "C" fn ZDSetErrorHandler(
     mut handler: Option<
