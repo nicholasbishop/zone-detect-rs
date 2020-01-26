@@ -14,6 +14,8 @@ pub enum Error {
     TruncatedDatabase(i64),
     #[error("invalid magic bytes")]
     InvalidMagic([u8; 3]),
+    #[error("invalid version")]
+    InvalidVersion(u8),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -71,6 +73,15 @@ impl Database {
             return Err(Error::InvalidMagic(
                 actual_magic.try_into().unwrap_or([0; 3]),
             ));
+        }
+
+        db.tableType = unsafe { *db.mapping.offset(3) };
+        db.version = unsafe { *db.mapping.offset(4) };
+        db.precision = unsafe { *db.mapping.offset(5) };
+        db.numFields = unsafe { *db.mapping.offset(6) };
+
+        if db.version >= 2 {
+            return Err(Error::InvalidVersion(db.version));
         }
 
         Ok(())
