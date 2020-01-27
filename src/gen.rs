@@ -803,17 +803,16 @@ unsafe extern "C" fn ZDPointInPolygon(
 #[no_mangle]
 pub unsafe extern "C" fn ZDLookup(
     mut library: &ZoneDetect,
-    mut lat: f32,
-    mut lon: f32,
+    location: crate::Location,
     mut safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
     let latFixedPoint: i32 = ZDFloatToFixedPoint(
-        lat,
+        location.latitude,
         90 as libc::c_int as libc::c_float,
         (*library).precision as libc::c_uint,
     );
     let lonFixedPoint: i32 = ZDFloatToFixedPoint(
-        lon,
+        location.longitude,
         180 as libc::c_int as libc::c_float,
         (*library).precision as libc::c_uint,
     );
@@ -938,15 +937,7 @@ pub unsafe extern "C" fn ZDLookup(
         i = i.wrapping_add(1)
     }
     /* Remove zones to ignore */
-    let mut newNumResults: size_t = 0 as libc::c_int as size_t;
-    let mut i_0: size_t = 0 as libc::c_int as size_t;
-    while i_0 < results.len() as u64 {
-        if results[i_0 as usize].lookupResult != LookupResult::Ignore {
-            results[newNumResults as usize] = results[i_0 as usize].clone();
-            newNumResults = newNumResults.wrapping_add(1)
-        }
-        i_0 = i_0.wrapping_add(1)
-    }
+    results.retain(|r| r.lookupResult != LookupResult::Ignore);
     /* Lookup metadata */
     let mut i_1: size_t = 0 as libc::c_int as size_t;
     while i_1 < results.len() as u64 {
@@ -973,6 +964,5 @@ pub unsafe extern "C" fn ZDLookup(
                 as libc::c_float
     }
 
-    // TODO: we've removed the end marker, so the length is probably off by one
     results
 }

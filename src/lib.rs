@@ -1,5 +1,6 @@
 mod gen;
 
+pub use gen::ZoneDetectResult;
 use std::{convert::TryInto, ffi::CStr, fs, io, path::Path, str::Utf8Error};
 
 #[derive(Debug, thiserror::Error)]
@@ -62,6 +63,21 @@ pub fn parse_string(
 
 pub struct Database {
     library: gen::ZoneDetect,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Location {
+    pub latitude: f32,
+    pub longitude: f32,
+}
+
+impl Location {
+    pub fn new(latitude: f32, longitude: f32) -> Location {
+        Location {
+            latitude,
+            longitude,
+        }
+    }
 }
 
 impl Database {
@@ -178,8 +194,8 @@ impl Database {
         Ok(())
     }
 
-    pub fn simple_lookup(&self, lat: f32, lon: f32) -> Option<String> {
-        let results = unsafe { gen::ZDLookup(&self.library, lat, lon, None) };
+    pub fn simple_lookup(&self, location: Location) -> Option<String> {
+        let results = unsafe { gen::ZDLookup(&self.library, location, None) };
 
         if let Some(result) = results.first() {
             match self.library.tableType {
@@ -202,12 +218,11 @@ impl Database {
 
     pub fn lookup(
         &self,
-        lat: f32,
-        lon: f32,
-    ) -> (Vec<gen::ZoneDetectResult>, f32) {
+        location: Location,
+    ) -> (Vec<ZoneDetectResult>, f32) {
         let mut safezone: f32 = 0.0;
         let results = unsafe {
-            gen::ZDLookup(&self.library, lat, lon, Some(&mut safezone))
+            gen::ZDLookup(&self.library, location, Some(&mut safezone))
         };
         (results, safezone)
     }
@@ -242,22 +257,22 @@ mod tests {
         let db = Database::open("data/timezone21.bin").unwrap();
         // Beijing
         assert_eq!(
-            db.simple_lookup(39.9042, 116.4074).unwrap(),
+            db.simple_lookup(Location::new(39.9042, 116.4074)).unwrap(),
             "Asia/Shanghai"
         );
         // Buenos Aires
         assert_eq!(
-            db.simple_lookup(-34.6037, -58.3816).unwrap(),
+            db.simple_lookup(Location::new(-34.6037, -58.3816)).unwrap(),
             "America/Argentina/Buenos_Aires"
         );
         // Canberra
         assert_eq!(
-            db.simple_lookup(-35.2809, 149.1300).unwrap(),
+            db.simple_lookup(Location::new(-35.2809, 149.1300)).unwrap(),
             "Australia/Sydney"
         );
         // New York City
         assert_eq!(
-            db.simple_lookup(40.7128, -74.0060).unwrap(),
+            db.simple_lookup(Location::new(40.7128, -74.0060)).unwrap(),
             "America/New_York"
         );
     }
