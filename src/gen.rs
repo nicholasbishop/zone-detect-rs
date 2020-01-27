@@ -270,170 +270,170 @@ unsafe fn ZDReaderGetPoint(
     let mut diffLat: i32 = 0 as libc::c_int;
     let mut diffLon: i32 = 0 as libc::c_int;
     loop {
-        if (*reader).done as libc::c_int > 1 as libc::c_int {
+        if reader.done as libc::c_int > 1 as libc::c_int {
             return 0 as libc::c_int;
         }
-        if (*reader).first as libc::c_int != 0
-            && (*(*reader).library).version as libc::c_int == 0 as libc::c_int
+        if reader.first as libc::c_int != 0
+            && (*reader.library).version as libc::c_int == 0 as libc::c_int
         {
             if ZDDecodeVariableLengthUnsigned(
-                (*reader).library,
-                &mut (*reader).polygonIndex,
-                &mut (*reader).numVertices,
+                reader.library,
+                &mut reader.polygonIndex,
+                &mut reader.numVertices,
             ) == 0
             {
                 return -(1 as libc::c_int);
             }
-            if (*reader).numVertices == 0 {
+            if reader.numVertices == 0 {
                 return -(1 as libc::c_int);
             }
         }
         referenceDone = 0 as libc::c_int as u8;
-        if (*(*reader).library).version as libc::c_int == 1 as libc::c_int {
+        if (*reader.library).version as libc::c_int == 1 as libc::c_int {
             let mut point: u64 = 0 as libc::c_int as u64;
-            if (*reader).referenceDirection == 0 {
+            if reader.referenceDirection == 0 {
                 if ZDDecodeVariableLengthUnsigned(
-                    (*reader).library,
-                    &mut (*reader).polygonIndex,
+                    reader.library,
+                    &mut reader.polygonIndex,
                     &mut point,
                 ) == 0
                 {
                     return -(1 as libc::c_int);
                 }
-            } else if (*reader).referenceDirection > 0 as libc::c_int {
+            } else if reader.referenceDirection > 0 as libc::c_int {
                 /* Read reference forward */
                 if ZDDecodeVariableLengthUnsigned(
-                    (*reader).library,
-                    &mut (*reader).referenceStart,
+                    reader.library,
+                    &mut reader.referenceStart,
                     &mut point,
                 ) == 0
                 {
                     return -(1 as libc::c_int);
                 }
-                if (*reader).referenceStart >= (*reader).referenceEnd {
+                if reader.referenceStart >= reader.referenceEnd {
                     referenceDone = 1 as libc::c_int as u8
                 }
-            } else if (*reader).referenceDirection < 0 as libc::c_int {
+            } else if reader.referenceDirection < 0 as libc::c_int {
                 /* Read reference backwards */
                 if ZDDecodeVariableLengthUnsignedReverse(
-                    (*reader).library,
-                    &mut (*reader).referenceStart,
+                    reader.library,
+                    &mut reader.referenceStart,
                     &mut point,
                 ) == 0
                 {
                     return -(1 as libc::c_int);
                 }
-                if (*reader).referenceStart <= (*reader).referenceEnd {
+                if reader.referenceStart <= reader.referenceEnd {
                     referenceDone = 1 as libc::c_int as u8
                 }
             }
             if point == 0 {
                 /* This is a special marker, it is not allowed in reference mode */
-                if (*reader).referenceDirection != 0 {
+                if reader.referenceDirection != 0 {
                     return -(1 as libc::c_int);
                 }
                 let mut value: u64 = 0;
                 if ZDDecodeVariableLengthUnsigned(
-                    (*reader).library,
-                    &mut (*reader).polygonIndex,
+                    reader.library,
+                    &mut reader.polygonIndex,
                     &mut value,
                 ) == 0
                 {
                     return -(1 as libc::c_int);
                 }
                 if value == 0 as libc::c_int as libc::c_ulong {
-                    (*reader).done = 2 as libc::c_int as u8
+                    reader.done = 2 as libc::c_int as u8
                 } else if value == 1 as libc::c_int as libc::c_ulong {
                     let mut diff: i32 = 0;
                     let mut start: u64 = 0;
                     if ZDDecodeVariableLengthUnsigned(
-                        (*reader).library,
-                        &mut (*reader).polygonIndex,
+                        reader.library,
+                        &mut reader.polygonIndex,
                         &mut start,
                     ) == 0
                     {
                         return -(1 as libc::c_int);
                     }
                     if ZDDecodeVariableLengthSigned(
-                        (*reader).library,
-                        &mut (*reader).polygonIndex,
+                        reader.library,
+                        &mut reader.polygonIndex,
                         &mut diff,
                     ) == 0
                     {
                         return -(1 as libc::c_int);
                     }
-                    (*reader).referenceStart = (*(*reader).library)
+                    reader.referenceStart = (*reader.library)
                         .dataOffset
                         .wrapping_add(start as u32);
-                    (*reader).referenceEnd =
-                        (*(*reader).library).dataOffset.wrapping_add(
+                    reader.referenceEnd =
+                        (*reader.library).dataOffset.wrapping_add(
                             (start as i64 + diff as libc::c_long) as u32,
                         );
-                    (*reader).referenceDirection = diff;
+                    reader.referenceDirection = diff;
                     if diff < 0 as libc::c_int {
-                        (*reader).referenceStart =
-                            (*reader).referenceStart.wrapping_sub(1);
-                        (*reader).referenceEnd =
-                            (*reader).referenceEnd.wrapping_sub(1)
+                        reader.referenceStart =
+                            reader.referenceStart.wrapping_sub(1);
+                        reader.referenceEnd =
+                            reader.referenceEnd.wrapping_sub(1)
                     }
                     continue;
                 }
             } else {
                 ZDDecodePoint(point, &mut diffLat, &mut diffLon);
-                if (*reader).referenceDirection < 0 as libc::c_int {
+                if reader.referenceDirection < 0 as libc::c_int {
                     diffLat = -diffLat;
                     diffLon = -diffLon
                 }
             }
         }
-        if (*(*reader).library).version as libc::c_int == 0 as libc::c_int {
+        if (*reader.library).version as libc::c_int == 0 as libc::c_int {
             if ZDDecodeVariableLengthSigned(
-                (*reader).library,
-                &mut (*reader).polygonIndex,
+                reader.library,
+                &mut reader.polygonIndex,
                 &mut diffLat,
             ) == 0
             {
                 return -(1 as libc::c_int);
             }
             if ZDDecodeVariableLengthSigned(
-                (*reader).library,
-                &mut (*reader).polygonIndex,
+                reader.library,
+                &mut reader.polygonIndex,
                 &mut diffLon,
             ) == 0
             {
                 return -(1 as libc::c_int);
             }
         }
-        if (*reader).done == 0 {
-            (*reader).pointLat += diffLat;
-            (*reader).pointLon += diffLon;
-            if (*reader).first != 0 {
-                (*reader).firstLat = (*reader).pointLat;
-                (*reader).firstLon = (*reader).pointLon
+        if reader.done == 0 {
+            reader.pointLat += diffLat;
+            reader.pointLon += diffLon;
+            if reader.first != 0 {
+                reader.firstLat = reader.pointLat;
+                reader.firstLon = reader.pointLon
             }
         } else {
             /* Close the polygon (the closing point is not encoded) */
-            (*reader).pointLat = (*reader).firstLat;
-            (*reader).pointLon = (*reader).firstLon;
-            (*reader).done = 2 as libc::c_int as u8
+            reader.pointLat = reader.firstLat;
+            reader.pointLon = reader.firstLon;
+            reader.done = 2 as libc::c_int as u8
         }
-        (*reader).first = 0 as libc::c_int as u8;
+        reader.first = 0 as libc::c_int as u8;
         if reader.library.version != 0 {
             break;
         }
-        (*reader).numVertices = (*reader).numVertices.wrapping_sub(1);
-        if (*reader).numVertices == 0 {
-            (*reader).done = 1 as libc::c_int as u8
+        reader.numVertices = reader.numVertices.wrapping_sub(1);
+        if reader.numVertices == 0 {
+            reader.done = 1 as libc::c_int as u8
         }
         if !(diffLat == 0 && diffLon == 0) {
             break;
         }
     }
     if referenceDone != 0 {
-        (*reader).referenceDirection = 0 as libc::c_int
+        reader.referenceDirection = 0 as libc::c_int
     }
-    *pointLat = (*reader).pointLat;
-    *pointLon = (*reader).pointLon;
+    *pointLat = reader.pointLat;
+    *pointLon = reader.pointLon;
     1 as libc::c_int
 }
 
