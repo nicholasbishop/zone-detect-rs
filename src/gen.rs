@@ -126,7 +126,7 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     let mapping: *const u8 = (*library).mapping.as_ptr();
     let buffer: *const u8 = mapping.offset(*index as isize);
     let bufferEnd: *const u8 = mapping
-        .offset((*library).mapping.len() as isize)
+        .add((*library).mapping.len())
         .offset(-(1 as libc::c_int as isize));
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     loop {
