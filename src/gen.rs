@@ -1,4 +1,4 @@
-#![allow(dead_code, non_snake_case,
+#![allow(non_snake_case,
          unused_assignments,
          clippy::cognitive_complexity)]
 #[derive(Clone, Debug)]
@@ -99,17 +99,6 @@ fn float_to_fixed_point(
             as f32) as i32
 }
 
-fn fixed_point_to_float(
-    input: i32,
-    scale: f32,
-    precision: libc::c_uint,
-) -> f32 {
-    let value: f32 = input as f32
-        / ((1 as libc::c_int)
-            << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as f32;
-    value * scale
-}
 pub fn decode_variable_length_unsigned(
     library: &ZoneDetect,
     index: &mut u32,
