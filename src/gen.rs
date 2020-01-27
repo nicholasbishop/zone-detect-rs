@@ -1,4 +1,4 @@
-#![allow(non_snake_case, unused_assignments, clippy::cognitive_complexity)]
+#![allow(unused_assignments, clippy::cognitive_complexity)]
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct ZoneDetectResult {
@@ -411,19 +411,19 @@ fn reader_get_point(
 fn point_in_polygon(
     library: &ZoneDetect,
     polygon_index: u32,
-    latFixedPoint: i32,
-    lonFixedPoint: i32,
+    lat_fixed_point: i32,
+    lon_fixed_point: i32,
     // TODO: it seems like these could be combined into an
     // Option<&mut u64>, but I coudln't figure out how to make
     // that compile
-    calcDistanceSqrMin: bool,
-    distanceSqrMin: &mut u64,
+    calc_distance_sqr_min: bool,
+    distance_sqr_min: &mut u64,
 ) -> LookupResult {
     let mut point_lat: i32 = 0;
     let mut point_lon: i32 = 0;
-    let mut prevLat: i32 = 0 as libc::c_int;
-    let mut prevLon: i32 = 0 as libc::c_int;
-    let mut prevQuadrant: libc::c_int = 0 as libc::c_int;
+    let mut prev_lat: i32 = 0 as libc::c_int;
+    let mut prev_lon: i32 = 0 as libc::c_int;
+    let mut prev_quadrant: libc::c_int = 0 as libc::c_int;
     let mut winding: libc::c_int = 0 as libc::c_int;
     let mut first: u8 = 1 as libc::c_int as u8;
     let mut reader = Reader::new(library, polygon_index);
@@ -437,87 +437,87 @@ fn point_in_polygon(
                 break;
             }
             /* Check if point is ON the border */
-            if point_lat == latFixedPoint && point_lon == lonFixedPoint {
-                if calcDistanceSqrMin {
-                    *distanceSqrMin = 0 as libc::c_int as u64
+            if point_lat == lat_fixed_point && point_lon == lon_fixed_point {
+                if calc_distance_sqr_min {
+                    *distance_sqr_min = 0 as libc::c_int as u64
                 }
                 return LookupResult::OnBorderVertex;
             }
             /* Find quadrant */
             let mut quadrant: libc::c_int = 0;
-            if point_lat >= latFixedPoint {
-                if point_lon >= lonFixedPoint {
+            if point_lat >= lat_fixed_point {
+                if point_lon >= lon_fixed_point {
                     quadrant = 0 as libc::c_int
                 } else {
                     quadrant = 1 as libc::c_int
                 }
-            } else if point_lon >= lonFixedPoint {
+            } else if point_lon >= lon_fixed_point {
                 quadrant = 3 as libc::c_int
             } else {
                 quadrant = 2 as libc::c_int
             }
             if first == 0 {
-                let mut windingNeedCompare: libc::c_int = 0 as libc::c_int;
-                let mut lineIsStraight: libc::c_int = 0 as libc::c_int;
+                let mut winding_need_compare: libc::c_int = 0 as libc::c_int;
+                let mut line_is_straight: libc::c_int = 0 as libc::c_int;
                 let mut a: f32 = 0 as libc::c_int as f32;
                 let mut b: f32 = 0 as libc::c_int as f32;
                 /* Calculate winding number */
-                if quadrant != prevQuadrant {
+                if quadrant != prev_quadrant {
                     if quadrant
-                        == (prevQuadrant + 1 as libc::c_int) % 4 as libc::c_int
+                        == (prev_quadrant + 1 as libc::c_int) % 4 as libc::c_int
                     {
                         winding += 1
                     } else if (quadrant + 1 as libc::c_int) % 4 as libc::c_int
-                        == prevQuadrant
+                        == prev_quadrant
                     {
                         winding -= 1
                     } else {
-                        windingNeedCompare = 1 as libc::c_int
+                        winding_need_compare = 1 as libc::c_int
                     }
                 }
                 /* Avoid horizontal and vertical lines */
-                if point_lon == prevLon || point_lat == prevLat {
-                    lineIsStraight = 1 as libc::c_int
+                if point_lon == prev_lon || point_lat == prev_lat {
+                    line_is_straight = 1 as libc::c_int
                 }
                 /* Calculate the parameters of y=ax+b if needed */
-                if lineIsStraight == 0
-                    && (calcDistanceSqrMin || windingNeedCompare != 0)
+                if line_is_straight == 0
+                    && (calc_distance_sqr_min || winding_need_compare != 0)
                 {
-                    a = (point_lat as f32 - prevLat as f32)
-                        / (point_lon as f32 - prevLon as f32);
+                    a = (point_lat as f32 - prev_lat as f32)
+                        / (point_lon as f32 - prev_lon as f32);
                     b = point_lat as f32 - a * point_lon as f32
                 }
-                let onStraight = point_in_box(
+                let on_straight = point_in_box(
                     point_lat,
-                    latFixedPoint,
-                    prevLat,
+                    lat_fixed_point,
+                    prev_lat,
                     point_lon,
-                    lonFixedPoint,
-                    prevLon,
+                    lon_fixed_point,
+                    prev_lon,
                 );
-                if lineIsStraight != 0
-                    && (onStraight || windingNeedCompare != 0)
+                if line_is_straight != 0
+                    && (on_straight || winding_need_compare != 0)
                 {
-                    if calcDistanceSqrMin {
-                        *distanceSqrMin = 0 as libc::c_int as u64
+                    if calc_distance_sqr_min {
+                        *distance_sqr_min = 0 as libc::c_int as u64
                     }
                     return LookupResult::OnBorderSegment;
                 }
                 /* Jumped two quadrants. */
-                if windingNeedCompare != 0 {
+                if winding_need_compare != 0 {
                     /* Check if the target is on the border */
-                    let intersectLon: i32 =
-                        ((latFixedPoint as f32 - b) / a) as i32;
-                    if intersectLon >= lonFixedPoint - 1 as libc::c_int
-                        && intersectLon <= lonFixedPoint + 1 as libc::c_int
+                    let intersect_lon: i32 =
+                        ((lat_fixed_point as f32 - b) / a) as i32;
+                    if intersect_lon >= lon_fixed_point - 1 as libc::c_int
+                        && intersect_lon <= lon_fixed_point + 1 as libc::c_int
                     {
-                        if calcDistanceSqrMin {
-                            *distanceSqrMin = 0 as libc::c_int as u64
+                        if calc_distance_sqr_min {
+                            *distance_sqr_min = 0 as libc::c_int as u64
                         }
                         return LookupResult::OnBorderSegment;
                     }
                     /* Ok, it's not. In which direction did we go round the target? */
-                    let sign: libc::c_int = if intersectLon < lonFixedPoint {
+                    let sign: libc::c_int = if intersect_lon < lon_fixed_point {
                         2 as libc::c_int
                     } else {
                         -(2 as libc::c_int)
@@ -531,62 +531,64 @@ fn point_in_polygon(
                     }
                 }
                 /* Calculate closest point on line (if needed) */
-                if calcDistanceSqrMin {
-                    let mut closestLon: f32 = 0.;
-                    let mut closestLat: f32 = 0.;
-                    if lineIsStraight == 0 {
-                        closestLon = (lonFixedPoint as f32
-                            + a * latFixedPoint as f32
+                if calc_distance_sqr_min {
+                    let mut closest_lon: f32 = 0.;
+                    let mut closest_lat: f32 = 0.;
+                    if line_is_straight == 0 {
+                        closest_lon = (lon_fixed_point as f32
+                            + a * lat_fixed_point as f32
                             - a * b)
                             / (a * a + 1 as libc::c_int as f32);
-                        closestLat = (a
-                            * (lonFixedPoint as f32 + a * latFixedPoint as f32)
+                        closest_lat = (a
+                            * (lon_fixed_point as f32
+                                + a * lat_fixed_point as f32)
                             + b)
                             / (a * a + 1 as libc::c_int as f32)
-                    } else if point_lon == prevLon {
-                        closestLon = point_lon as f32;
-                        closestLat = latFixedPoint as f32
+                    } else if point_lon == prev_lon {
+                        closest_lon = point_lon as f32;
+                        closest_lat = lat_fixed_point as f32
                     } else {
-                        closestLon = lonFixedPoint as f32;
-                        closestLat = point_lat as f32
+                        closest_lon = lon_fixed_point as f32;
+                        closest_lat = point_lat as f32
                     }
-                    let closestInBox = point_in_box(
+                    let closest_in_box = point_in_box(
                         point_lon,
-                        closestLon as i32,
-                        prevLon,
+                        closest_lon as i32,
+                        prev_lon,
                         point_lat,
-                        closestLat as i32,
-                        prevLat,
+                        closest_lat as i32,
+                        prev_lat,
                     );
                     let mut diff_lat: i64 = 0;
                     let mut diff_lon: i64 = 0;
-                    if closestInBox {
+                    if closest_in_box {
                         /* Calculate squared distance to segment. */
-                        diff_lat = (closestLat - latFixedPoint as f32) as i64;
-                        diff_lon = (closestLon - lonFixedPoint as f32) as i64
+                        diff_lat =
+                            (closest_lat - lat_fixed_point as f32) as i64;
+                        diff_lon = (closest_lon - lon_fixed_point as f32) as i64
                     } else {
                         /*
                          * Calculate squared distance to vertices
                          * It is enough to check the current point since the polygon is closed.
                          */
-                        diff_lat = (point_lat - latFixedPoint) as i64;
-                        diff_lon = (point_lon - lonFixedPoint) as i64
+                        diff_lat = (point_lat - lat_fixed_point) as i64;
+                        diff_lon = (point_lon - lon_fixed_point) as i64
                     }
                     /* Note: lon has half scale */
-                    let distanceSqr: u64 = ((diff_lat * diff_lat) as u64)
+                    let distance_sqr: u64 = ((diff_lat * diff_lat) as u64)
                         .wrapping_add(
                             ((diff_lon * diff_lon) as u64).wrapping_mul(
                                 4 as libc::c_int as libc::c_ulong,
                             ),
                         );
-                    if distanceSqr < *distanceSqrMin {
-                        *distanceSqrMin = distanceSqr
+                    if distance_sqr < *distance_sqr_min {
+                        *distance_sqr_min = distance_sqr
                     }
                 }
             }
-            prevQuadrant = quadrant;
-            prevLat = point_lat;
-            prevLon = point_lon;
+            prev_quadrant = quadrant;
+            prev_lat = point_lat;
+            prev_lon = point_lon;
             first = 0 as libc::c_int as u8
         }
     }
@@ -598,8 +600,8 @@ fn point_in_polygon(
         return LookupResult::NotInZone;
     }
     /* Should not happen */
-    if calcDistanceSqrMin {
-        *distanceSqrMin = 0 as libc::c_int as u64
+    if calc_distance_sqr_min {
+        *distance_sqr_min = 0 as libc::c_int as u64
     }
     LookupResult::OnBorderSegment
 }
@@ -609,87 +611,87 @@ pub fn lookup(
     location: crate::Location,
     safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
-    let latFixedPoint: i32 = float_to_fixed_point(
+    let lat_fixed_point: i32 = float_to_fixed_point(
         location.latitude,
         90 as libc::c_int as f32,
         library.precision as libc::c_uint,
     );
-    let lonFixedPoint: i32 = float_to_fixed_point(
+    let lon_fixed_point: i32 = float_to_fixed_point(
         location.longitude,
         180 as libc::c_int as f32,
         library.precision as libc::c_uint,
     );
-    let mut distanceSqrMin: u64 = -(1 as libc::c_int) as u64;
+    let mut distance_sqr_min: u64 = -(1 as libc::c_int) as u64;
     /* Parse the header */
     /* Iterate over all polygons */
-    let mut bboxIndex: u32 = library.bbox_offset;
-    let mut metadataIndex: u32 = 0 as libc::c_int as u32;
+    let mut bbox_index: u32 = library.bbox_offset;
+    let mut metadata_index: u32 = 0 as libc::c_int as u32;
     let mut polygon_index: u32 = 0 as libc::c_int as u32;
     let mut results = Vec::new();
     let mut polygon_id: u32 = 0 as libc::c_int as u32;
-    while bboxIndex < library.metadata_offset {
-        let mut minLat: i32 = 0;
-        let mut minLon: i32 = 0;
-        let mut maxLat: i32 = 0;
-        let mut maxLon: i32 = 0;
-        let mut metadataIndexDelta: i32 = 0;
-        let mut polygon_indexDelta: u64 = 0;
-        if decode_variable_length_signed(library, &mut bboxIndex, &mut minLat)
+    while bbox_index < library.metadata_offset {
+        let mut min_lat: i32 = 0;
+        let mut min_lon: i32 = 0;
+        let mut max_lat: i32 = 0;
+        let mut max_lon: i32 = 0;
+        let mut metadata_index_delta: i32 = 0;
+        let mut polygon_index_delta: u64 = 0;
+        if decode_variable_length_signed(library, &mut bbox_index, &mut min_lat)
             == 0
         {
             break;
         }
-        if decode_variable_length_signed(library, &mut bboxIndex, &mut minLon)
+        if decode_variable_length_signed(library, &mut bbox_index, &mut min_lon)
             == 0
         {
             break;
         }
-        if decode_variable_length_signed(library, &mut bboxIndex, &mut maxLat)
+        if decode_variable_length_signed(library, &mut bbox_index, &mut max_lat)
             == 0
         {
             break;
         }
-        if decode_variable_length_signed(library, &mut bboxIndex, &mut maxLon)
+        if decode_variable_length_signed(library, &mut bbox_index, &mut max_lon)
             == 0
         {
             break;
         }
         if decode_variable_length_signed(
             library,
-            &mut bboxIndex,
-            &mut metadataIndexDelta,
+            &mut bbox_index,
+            &mut metadata_index_delta,
         ) == 0
         {
             break;
         }
         if decode_variable_length_unsigned(
             library,
-            &mut bboxIndex,
-            &mut polygon_indexDelta,
+            &mut bbox_index,
+            &mut polygon_index_delta,
         ) == 0
         {
             break;
         }
-        metadataIndex = (metadataIndex as libc::c_uint)
-            .wrapping_add(metadataIndexDelta as u32)
+        metadata_index = (metadata_index as libc::c_uint)
+            .wrapping_add(metadata_index_delta as u32)
             as u32 as u32;
         polygon_index = (polygon_index as libc::c_uint)
-            .wrapping_add(polygon_indexDelta as u32)
+            .wrapping_add(polygon_index_delta as u32)
             as u32 as u32;
-        if latFixedPoint < minLat {
+        if lat_fixed_point < min_lat {
             break;
         }
-        if latFixedPoint <= maxLat
-            && lonFixedPoint >= minLon
-            && lonFixedPoint <= maxLon
+        if lat_fixed_point <= max_lat
+            && lon_fixed_point >= min_lon
+            && lon_fixed_point <= max_lon
         {
             let lookup_result = point_in_polygon(
                 library,
                 library.data_offset.wrapping_add(polygon_index),
-                latFixedPoint,
-                lonFixedPoint,
+                lat_fixed_point,
+                lon_fixed_point,
                 safezone.is_some(),
-                &mut distanceSqrMin,
+                &mut distance_sqr_min,
             );
             if lookup_result == LookupResult::ParseError {
                 break;
@@ -697,7 +699,7 @@ pub fn lookup(
             if lookup_result != LookupResult::NotInZone {
                 results.push(ZoneDetectResult {
                     polygon_id,
-                    meta_id: metadataIndex,
+                    meta_id: metadata_index,
                     fields: std::collections::HashMap::with_capacity(
                         library.field_names.len(),
                     ),
@@ -709,26 +711,26 @@ pub fn lookup(
     }
     /* Clean up results */
     for i in 0..results.len() {
-        let mut insideSum: libc::c_int = 0 as libc::c_int;
-        let mut overrideResult = LookupResult::Ignore;
+        let mut inside_sum: libc::c_int = 0 as libc::c_int;
+        let mut override_result = LookupResult::Ignore;
         for j in i..results.len() {
             if results[i as usize].meta_id == results[j as usize].meta_id {
-                let tmpResult = results[j as usize].lookup_result;
+                let tmp_result = results[j as usize].lookup_result;
                 results[j as usize].lookup_result = LookupResult::Ignore;
                 /* This is the same result. Is it an exclusion zone? */
-                if tmpResult == LookupResult::InZone {
-                    insideSum += 1
-                } else if tmpResult == LookupResult::InExcludedZone {
-                    insideSum -= 1
+                if tmp_result == LookupResult::InZone {
+                    inside_sum += 1
+                } else if tmp_result == LookupResult::InExcludedZone {
+                    inside_sum -= 1
                 } else {
                     /* If on the bodrder then the final result is on the border */
-                    overrideResult = tmpResult
+                    override_result = tmp_result
                 }
             }
         }
-        if overrideResult != LookupResult::Ignore {
-            results[i as usize].lookup_result = overrideResult
-        } else if insideSum != 0 {
+        if override_result != LookupResult::Ignore {
+            results[i as usize].lookup_result = override_result
+        } else if inside_sum != 0 {
             results[i as usize].lookup_result = LookupResult::InZone
         }
     }
@@ -736,12 +738,12 @@ pub fn lookup(
     results.retain(|r| r.lookup_result != LookupResult::Ignore);
     /* Lookup metadata */
     for result in &mut results {
-        let mut tmpIndex: u32 =
+        let mut tmp_index: u32 =
             library.metadata_offset.wrapping_add(result.meta_id);
 
         for j in 0..library.field_names.len() {
             let key = library.field_names[j].clone();
-            let value = crate::parse_string(&*library, &mut tmpIndex)
+            let value = crate::parse_string(&*library, &mut tmp_index)
                 .expect("failed to get field data");
             result.fields.insert(key, value);
         }
@@ -749,7 +751,7 @@ pub fn lookup(
 
     if let Some(safezone) = safezone {
         let den = (1 << (library.precision - 1)) as f32;
-        *safezone = (distanceSqrMin as f32).sqrt() * 90f32 / den;
+        *safezone = (distance_sqr_min as f32).sqrt() * 90f32 / den;
     }
 
     results
