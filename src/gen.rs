@@ -333,8 +333,9 @@ fn reader_get_point(
                     {
                         return -(1 as libc::c_int);
                     }
-                    reader.reference_start =
-                        (*reader.library).data_offset.wrapping_add(start as u32);
+                    reader.reference_start = (*reader.library)
+                        .data_offset
+                        .wrapping_add(start as u32);
                     reader.reference_end =
                         (*reader.library).data_offset.wrapping_add(
                             (start as i64 + diff as libc::c_long) as u32,
