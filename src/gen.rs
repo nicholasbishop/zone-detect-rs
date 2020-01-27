@@ -135,7 +135,7 @@ pub fn ZDDecodeVariableLengthUnsigned(
     *index = (*index as libc::c_uint).wrapping_add(i) as u32 as u32;
     i
 }
-unsafe fn ZDDecodeVariableLengthUnsignedReverse(
+fn ZDDecodeVariableLengthUnsignedReverse(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut u64,
@@ -144,15 +144,14 @@ unsafe fn ZDDecodeVariableLengthUnsignedReverse(
     if *index >= library.mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
-    let mapping: *const u8 = library.mapping.as_ptr();
-    if *mapping.offset(i as isize) as libc::c_int & 0x80 as libc::c_int != 0 {
+    if library.mapping[i as usize] as libc::c_int & 0x80 as libc::c_int != 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
     if i == 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
     i = i.wrapping_sub(1);
-    while *mapping.offset(i as isize) as libc::c_int & 0x80 as libc::c_int != 0
+    while library.mapping[i as usize] as libc::c_int & 0x80 as libc::c_int != 0
     {
         if i == 0 {
             return 0 as libc::c_int as libc::c_uint;
