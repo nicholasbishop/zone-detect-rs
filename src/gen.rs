@@ -1,3 +1,9 @@
+// Note: this code was originally zonedetect.c (see copyright notice
+// below). It was automatically converted to Rust with the c2rust
+// tool. It has been manually cleaned up quite a bit, so nothing is
+// unsafe now, but there's still a lot of weird looking code due to
+// the c2rust step.
+
 #![allow(clippy::cognitive_complexity)]
 
 use crate::{Database as ZoneDetect, LookupResult, ZoneDetectResult};
