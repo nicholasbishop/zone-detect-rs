@@ -6,7 +6,7 @@
 //! let path = std::path::Path::new("/path/to/timezone21.bin");
 //! let database = zone_detect::Database::open(path)
 //!     .expect("failed to open database");
-//! let (zones, _) = database.lookup(zone_detect::Location {
+//! let result = database.lookup(zone_detect::Location {
 //!     latitude: 35.0715,
 //!     longitude: -82.5216,
 //! });

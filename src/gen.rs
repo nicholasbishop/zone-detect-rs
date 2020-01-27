@@ -6,8 +6,7 @@
 
 #![allow(clippy::cognitive_complexity)]
 
-// TODO
-use crate::{Database as ZoneDetect, Zone};
+use crate::{Database, Zone};
 
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
@@ -37,7 +36,7 @@ use crate::{Database as ZoneDetect, Zone};
  */
 #[derive(Copy, Clone)]
 pub struct Reader<'a> {
-    pub library: &'a ZoneDetect,
+    pub library: &'a Database,
     pub polygon_index: u32,
     pub num_vertices: u64,
     pub done: u8,
@@ -52,7 +51,7 @@ pub struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    fn new(library: &'a ZoneDetect, polygon_index: u32) -> Reader {
+    fn new(library: &'a Database, polygon_index: u32) -> Reader {
         Reader {
             library,
             polygon_index,
@@ -78,7 +77,7 @@ fn float_to_fixed_point(input: f32, scale: f32, precision: u32) -> i32 {
 }
 
 pub fn decode_variable_length_unsigned(
-    library: &ZoneDetect,
+    library: &Database,
     index: &mut u32,
     result: &mut u64,
 ) -> u32 {
@@ -103,7 +102,7 @@ pub fn decode_variable_length_unsigned(
     i
 }
 fn decode_variable_length_unsigned_reverse(
-    library: &ZoneDetect,
+    library: &Database,
     index: &mut u32,
     result: &mut u64,
 ) -> u32 {
@@ -137,7 +136,7 @@ fn decode_unsigned_to_signed(value: u64) -> i64 {
     }
 }
 fn decode_variable_length_signed(
-    library: &ZoneDetect,
+    library: &Database,
     index: &mut u32,
     result: &mut i32,
 ) -> u32 {
@@ -147,7 +146,7 @@ fn decode_variable_length_signed(
     *result = decode_unsigned_to_signed(value) as i32;
     retval
 }
-pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
+pub fn parse_string(library: &Database, index: &mut u32) -> Option<Vec<u8>> {
     let mut str_length: u64 = 0;
     if decode_variable_length_unsigned(library, index, &mut str_length) == 0 {
         return None;
@@ -392,7 +391,7 @@ pub enum PointLookupResult {
 }
 
 fn point_in_polygon(
-    library: &ZoneDetect,
+    library: &Database,
     polygon_index: u32,
     lat_fixed_point: i32,
     lon_fixed_point: i32,
@@ -589,7 +588,7 @@ pub struct ZoneDetectResult {
 }
 
 pub fn lookup(
-    library: &ZoneDetect,
+    library: &Database,
     location: crate::Location,
     safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
