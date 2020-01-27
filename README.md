@@ -1,17 +1,12 @@
 # zone-detect
 
-This is a simple Rust library that wraps the
-[ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) C library.
+This is a Rust version of the
+[ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) C library. The
+initial conversion was done with c2rust, then manually cleaned up (it
+no longer contains any unsafe code).
 
-The full interface is wrapped via
-[bindgen](https://github.com/rust-lang/rust-bindgen) in the `sys`
-module. Part of the API has a safe wrapper in the root of the crate.
-
-## Submodule
-
-The [ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) repo, which
-provides the actual implementation, is pulled in as a submodule. Make
-sure to run `git submodule update --init` after cloning this repo.
+This crate can be used to look up the country and timezone of any
+location on Earth.
 
 ## Running the example
 
