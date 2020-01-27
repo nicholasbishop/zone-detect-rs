@@ -1,7 +1,7 @@
 mod gen;
 
 pub use gen::ZoneDetectResult;
-use std::{convert::TryInto, ffi::CStr, fs, io, path::Path, str::Utf8Error};
+use std::{convert::TryInto, fs, io, path::Path, string::FromUtf8Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -16,9 +16,9 @@ pub enum Error {
     #[error("invalid table type")]
     InvalidTableType(u8),
     #[error("invalid field name")]
-    InvalidFieldName(u8, Utf8Error),
+    InvalidFieldName(u8, StringParseError),
     #[error("invalid notice")]
-    InvalidNotice(Utf8Error),
+    InvalidNotice(StringParseError),
     #[error("invalid metadata offset")]
     InvalidMetadataOffset,
     #[error("invalid data offset")]
@@ -51,14 +51,24 @@ pub enum LookupResult {
     OnBorderSegment = 4,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum StringParseError {
+    #[error("encoding error")]
+    EncodingError,
+    #[error("invalid UTF-8")]
+    InvalidUtf8(#[from] FromUtf8Error),
+}
+
 pub fn parse_string(
     db: &gen::ZoneDetect,
     index: &mut u32,
-) -> std::result::Result<String, Utf8Error> {
-    let raw = unsafe { gen::ZDParseString(db, index) };
-    let c_str = unsafe { CStr::from_ptr(raw) };
-    let s = c_str.to_str()?;
-    Ok(s.into())
+) -> std::result::Result<String, StringParseError> {
+    if let Some(bytes) = unsafe { gen::ZDParseString(db, index) } {
+        let string = String::from_utf8(bytes)?;
+        Ok(string)
+    } else {
+        Err(StringParseError::EncodingError)
+    }
 }
 
 pub struct Database {

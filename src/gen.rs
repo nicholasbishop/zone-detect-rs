@@ -1,9 +1,5 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case,
          non_upper_case_globals, unused_assignments, unused_mut)]
-extern "C" {
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-}
 type size_t = libc::c_ulong;
 #[derive(Clone, Debug)]
 #[repr(C)]
@@ -199,10 +195,10 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
 pub unsafe extern "C" fn ZDParseString(
     library: &ZoneDetect,
     mut index: *mut u32,
-) -> *mut libc::c_char {
+) -> Option<Vec<u8>> {
     let mut strLength: u64 = 0;
     if ZDDecodeVariableLengthUnsigned(library, index, &mut strLength) == 0 {
-        return 0 as *mut libc::c_char;
+        return None;
     }
     let mut strOffset: u32 = *index;
     let mut remoteStr: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -218,33 +214,29 @@ pub unsafe extern "C" fn ZDParseString(
             &mut strLength,
         ) == 0
         {
-            return 0 as *mut libc::c_char;
+            return None;
         }
         if strLength > 256 as libc::c_int as libc::c_ulong {
-            return 0 as *mut libc::c_char;
+            return None;
         }
     }
-    let str: *mut libc::c_char =
-        malloc(strLength.wrapping_add(1 as libc::c_int as libc::c_ulong))
-            as *mut libc::c_char;
+    let mut str = Vec::with_capacity(strLength as usize);
     let mapping: *const u8 = (*library).mapping.as_ptr();
-    if !str.is_null() {
-        let mut i: size_t = 0 as libc::c_int as size_t;
-        while i < strLength {
-            *str.offset(i as isize) = (*mapping
+    let mut i: size_t = 0 as libc::c_int as size_t;
+    while i < strLength {
+        str.push(
+            (*mapping
                 .offset((strOffset as libc::c_ulong).wrapping_add(i) as isize)
                 as libc::c_int
-                ^ 0x80 as libc::c_int)
-                as libc::c_char;
-            i = i.wrapping_add(1)
-        }
-        *str.offset(strLength as isize) = 0 as libc::c_int as libc::c_char
+                ^ 0x80 as libc::c_int) as u8,
+        );
+        i = i.wrapping_add(1)
     }
     if remoteStr == 0 {
         *index = (*index as libc::c_uint).wrapping_add(strLength as u32) as u32
             as u32
     }
-    str
+    Some(str)
 }
 
 fn ZDPointInBox(
