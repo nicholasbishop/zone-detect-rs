@@ -115,7 +115,7 @@ pub fn ZDDecodeVariableLengthUnsigned(
     index: &mut u32,
     result: &mut u64,
 ) -> libc::c_uint {
-    if *index >= (*library).mapping.len() as u32 {
+    if *index >= library.mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
     let mut value: u64 = 0 as libc::c_int as u64;
@@ -141,10 +141,10 @@ unsafe fn ZDDecodeVariableLengthUnsignedReverse(
     result: &mut u64,
 ) -> libc::c_uint {
     let mut i: u32 = *index;
-    if *index >= (*library).mapping.len() as u32 {
+    if *index >= library.mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
     }
-    let mapping: *const u8 = (*library).mapping.as_ptr();
+    let mapping: *const u8 = library.mapping.as_ptr();
     if *mapping.offset(i as isize) as libc::c_int & 0x80 as libc::c_int != 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
@@ -193,7 +193,7 @@ pub unsafe fn ZDParseString(
     let mut strOffset: u32 = *index;
     let mut remoteStr: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     if strLength >= 256 as libc::c_int as libc::c_ulong {
-        strOffset = (*library)
+        strOffset = library
             .metadataOffset
             .wrapping_add(strLength as u32)
             .wrapping_sub(256 as libc::c_int as libc::c_uint);
@@ -211,7 +211,7 @@ pub unsafe fn ZDParseString(
         }
     }
     let mut str = Vec::with_capacity(strLength as usize);
-    let mapping: *const u8 = (*library).mapping.as_ptr();
+    let mapping: *const u8 = library.mapping.as_ptr();
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < strLength {
         str.push(
@@ -452,10 +452,10 @@ unsafe fn ZDFindPolygon(
     mut polygonIndexPtr: *mut u32,
 ) -> libc::c_int {
     let mut polygonId: u32 = 0 as libc::c_int as u32;
-    let mut bboxIndex: u32 = (*library).bboxOffset;
+    let mut bboxIndex: u32 = library.bboxOffset;
     let mut metadataIndex: u32 = 0 as libc::c_int as u32;
     let mut polygonIndex: u32 = 0 as libc::c_int as u32;
-    while bboxIndex < (*library).metadataOffset {
+    while bboxIndex < library.metadataOffset {
         let mut polygonIndexDelta: u64 = 0;
         let mut metadataIndexDelta: i32 = 0;
         let mut tmp: i32 = 0;
@@ -500,13 +500,13 @@ unsafe fn ZDFindPolygon(
         if polygonId == wantedId {
             if !metadataIndexPtr.is_null() {
                 metadataIndex = (metadataIndex as libc::c_uint)
-                    .wrapping_add((*library).metadataOffset)
+                    .wrapping_add(library.metadataOffset)
                     as u32 as u32;
                 *metadataIndexPtr = metadataIndex
             }
             if !polygonIndexPtr.is_null() {
                 polygonIndex = (polygonIndex as libc::c_uint)
-                    .wrapping_add((*library).dataOffset)
+                    .wrapping_add(library.dataOffset)
                     as u32 as u32;
                 *polygonIndexPtr = polygonIndex
             }
@@ -561,12 +561,12 @@ pub unsafe fn ZDPolygonToList(
                 flData.push(ZDFixedPointToFloat(
                     lat,
                     90 as libc::c_int as f32,
-                    (*library).precision as libc::c_uint,
+                    library.precision as libc::c_uint,
                 ));
                 flData.push(ZDFixedPointToFloat(
                     lon,
                     180 as libc::c_int as f32,
-                    (*library).precision as libc::c_uint,
+                    library.precision as libc::c_uint,
                 ));
                 i = (i as libc::c_ulong)
                     .wrapping_add(2 as libc::c_int as libc::c_ulong)
@@ -781,22 +781,22 @@ pub unsafe fn ZDLookup(
     let latFixedPoint: i32 = ZDFloatToFixedPoint(
         location.latitude,
         90 as libc::c_int as f32,
-        (*library).precision as libc::c_uint,
+        library.precision as libc::c_uint,
     );
     let lonFixedPoint: i32 = ZDFloatToFixedPoint(
         location.longitude,
         180 as libc::c_int as f32,
-        (*library).precision as libc::c_uint,
+        library.precision as libc::c_uint,
     );
     let mut distanceSqrMin: u64 = -(1 as libc::c_int) as u64;
     /* Parse the header */
     /* Iterate over all polygons */
-    let mut bboxIndex: u32 = (*library).bboxOffset;
+    let mut bboxIndex: u32 = library.bboxOffset;
     let mut metadataIndex: u32 = 0 as libc::c_int as u32;
     let mut polygonIndex: u32 = 0 as libc::c_int as u32;
     let mut results = Vec::new();
     let mut polygonId: u32 = 0 as libc::c_int as u32;
-    while bboxIndex < (*library).metadataOffset {
+    while bboxIndex < library.metadataOffset {
         let mut minLat: i32 = 0;
         let mut minLon: i32 = 0;
         let mut maxLat: i32 = 0;
@@ -854,7 +854,7 @@ pub unsafe fn ZDLookup(
         {
             let lookupResult = ZDPointInPolygon(
                 library,
-                (*library).dataOffset.wrapping_add(polygonIndex),
+                library.dataOffset.wrapping_add(polygonIndex),
                 latFixedPoint,
                 lonFixedPoint,
                 if safezone.is_some() {
@@ -871,7 +871,7 @@ pub unsafe fn ZDLookup(
                     polygonId,
                     metaId: metadataIndex,
                     fields: std::collections::HashMap::with_capacity(
-                        (*library).fieldNames.len(),
+                        library.fieldNames.len(),
                     ),
                     lookupResult,
                 });
@@ -913,13 +913,13 @@ pub unsafe fn ZDLookup(
     /* Lookup metadata */
     let mut i_1: size_t = 0 as libc::c_int as size_t;
     while i_1 < results.len() as u64 {
-        let mut tmpIndex: u32 = (*library)
+        let mut tmpIndex: u32 = library
             .metadataOffset
             .wrapping_add(results[i_1 as usize].metaId);
 
         let mut j_0: size_t = 0 as libc::c_int as size_t;
-        while j_0 < (*library).fieldNames.len() as libc::c_ulong {
-            let key = (*library).fieldNames[j_0 as usize].clone();
+        while j_0 < library.fieldNames.len() as libc::c_ulong {
+            let key = library.fieldNames[j_0 as usize].clone();
             let value = crate::parse_string(&*library, &mut tmpIndex)
                 .expect("failed to get field data");
             results[i_1 as usize].fields.insert(key, value);
@@ -929,7 +929,7 @@ pub unsafe fn ZDLookup(
     }
 
     if let Some(safezone) = safezone {
-        let den = (1 << ((*library).precision - 1)) as f32;
+        let den = (1 << (library.precision - 1)) as f32;
         *safezone = (distanceSqrMin as f32).sqrt() * 90f32 / den;
     }
 
