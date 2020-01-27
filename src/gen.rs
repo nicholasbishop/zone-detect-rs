@@ -730,12 +730,10 @@ pub fn lookup(
         polygonId = polygonId.wrapping_add(1)
     }
     /* Clean up results */
-    let mut i: size_t = 0 as libc::c_int as size_t;
-    while i < results.len() as u64 {
+    for i in 0..results.len() {
         let mut insideSum: libc::c_int = 0 as libc::c_int;
         let mut overrideResult = LookupResult::Ignore;
-        let mut j: size_t = i;
-        while j < results.len() as u64 {
+        for j in i..results.len() {
             if results[i as usize].metaId == results[j as usize].metaId {
                 let tmpResult = results[j as usize].lookupResult;
                 results[j as usize].lookupResult = LookupResult::Ignore;
@@ -749,14 +747,12 @@ pub fn lookup(
                     overrideResult = tmpResult
                 }
             }
-            j = j.wrapping_add(1)
         }
         if overrideResult != LookupResult::Ignore {
             results[i as usize].lookupResult = overrideResult
         } else if insideSum != 0 {
             results[i as usize].lookupResult = LookupResult::InZone
         }
-        i = i.wrapping_add(1)
     }
     /* Remove zones to ignore */
     results.retain(|r| r.lookupResult != LookupResult::Ignore);
