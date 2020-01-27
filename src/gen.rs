@@ -208,15 +208,13 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
         }
     }
     let mut str = Vec::with_capacity(strLength as usize);
-    let mut i: size_t = 0 as libc::c_int as size_t;
-    while i < strLength {
+    for i in 0..strLength as usize {
         str.push(
             (library.mapping
-                [(strOffset as libc::c_ulong).wrapping_add(i) as usize]
+                [strOffset as usize + i]
                 as libc::c_int
                 ^ 0x80 as libc::c_int) as u8,
         );
-        i = i.wrapping_add(1)
     }
     if remoteStr == 0 {
         *index = (*index as libc::c_uint).wrapping_add(strLength as u32) as u32
