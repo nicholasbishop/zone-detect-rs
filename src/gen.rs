@@ -110,7 +110,7 @@ fn ZDFixedPointToFloat(
             as libc::c_float;
     value * scale
 }
-pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
+pub fn ZDDecodeVariableLengthUnsigned(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut u64,
@@ -120,25 +120,18 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     }
     let mut value: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mapping: *const u8 = (*library).mapping.as_ptr();
-    let buffer: *const u8 = mapping.offset(*index as isize);
-    let bufferEnd: *const u8 = mapping
-        .add((*library).mapping.len())
-        .offset(-(1 as libc::c_int as isize));
+    let buffer = &library.mapping[*index as usize..];
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        value |= (*buffer.offset(i as isize) as u64
+    for byte in buffer {
+        value |= (*byte as u64
             & 0x7f as libc::c_int as libc::c_ulong)
             << shift;
         shift = shift.wrapping_add(7 as libc::c_uint);
-        if *buffer.offset(i as isize) as libc::c_int & 0x80 as libc::c_int == 0
+        if *byte as libc::c_int & 0x80 as libc::c_int == 0
         {
             break;
         }
         i = i.wrapping_add(1);
-        if buffer.offset(i as isize) > bufferEnd {
-            return 0 as libc::c_int as libc::c_uint;
-        }
     }
     i = i.wrapping_add(1);
     *result = value;
