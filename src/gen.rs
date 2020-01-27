@@ -259,17 +259,17 @@ unsafe extern "C" fn ZDPointInBox(
 }
 
 unsafe extern "C" fn ZDUnshuffle(mut w: u64) -> u32 {
-    w &= 0x5555555555555555 as libc::c_long as libc::c_ulong;
+    w &= 0x5555_5555_5555_5555 as libc::c_long as libc::c_ulong;
     w = (w | w >> 1 as libc::c_int)
-        & 0x3333333333333333 as libc::c_long as libc::c_ulong;
+        & 0x3333_3333_3333_3333 as libc::c_long as libc::c_ulong;
     w = (w | w >> 2 as libc::c_int)
-        & 0xf0f0f0f0f0f0f0f as libc::c_long as libc::c_ulong;
+        & 0x0f0f_0f0f_0f0f_0f0f as libc::c_long as libc::c_ulong;
     w = (w | w >> 4 as libc::c_int)
-        & 0xff00ff00ff00ff as libc::c_long as libc::c_ulong;
+        & 0xff_00ff_00ff_00ff as libc::c_long as libc::c_ulong;
     w = (w | w >> 8 as libc::c_int)
-        & 0xffff0000ffff as libc::c_long as libc::c_ulong;
+        & 0xffff_0000_ffff as libc::c_long as libc::c_ulong;
     w = (w | w >> 16 as libc::c_int)
-        & 0xffffffff as libc::c_uint as libc::c_ulong;
+        & 0xffff_ffff as libc::c_uint as libc::c_ulong;
     w as u32
 }
 unsafe extern "C" fn ZDDecodePoint(
