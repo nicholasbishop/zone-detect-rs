@@ -1,15 +1,13 @@
-//! Safe wrapper around part of the unsafe sys module.
-//!
 //! Example:
 //!
-//! ```no_run
-//! let path = std::path::Path::new("/path/to/timezone21.bin");
-//! let database = zone_detect::Database::open(path)
+//! ```
+//! let database = zone_detect::Database::open("data/timezone21.bin")
 //!     .expect("failed to open database");
-//! let result = database.lookup(zone_detect::Location {
+//! let s = database.simple_lookup(zone_detect::Location {
 //!     latitude: 35.0715,
 //!     longitude: -82.5216,
-//! });
+//! }).unwrap();
+//! assert_eq!(s, "America/New_York");
 //! ```
 
 #![deny(missing_docs)]
