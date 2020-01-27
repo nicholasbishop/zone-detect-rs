@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tzlookup::{Database, Location, ZoneDetectResult, LookupResult};
+use tzlookup::{Database, Location, LookupResult, ZoneDetectResult};
 
 fn random_location(rng: &mut StdRng) -> Location {
     Location {
@@ -33,11 +33,15 @@ fn lookup_result_to_string(result: LookupResult) -> &'static str {
     }
 }
 
-fn lookup(db: &Database, location: Location) -> (String, Vec<ZoneDetectResult>) {
+fn lookup(
+    db: &Database,
+    location: Location,
+) -> (String, Vec<ZoneDetectResult>) {
     let mut output = String::new();
     let (results, safezone) = db.lookup(location);
     for result in &results {
-        output += &format!("{}:\n", lookup_result_to_string(result.lookupResult));
+        output +=
+            &format!("{}:\n", lookup_result_to_string(result.lookupResult));
         output += &format!("  meta: {}\n", result.metaId);
         output += &format!("  polygon: {}\n", result.polygonId);
         output += &format!(
