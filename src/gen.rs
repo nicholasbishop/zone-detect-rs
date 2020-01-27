@@ -1,6 +1,5 @@
 #![allow(unused_assignments, clippy::cognitive_complexity)]
 #[derive(Clone, Debug)]
-#[repr(C)]
 pub struct ZoneDetectResult {
     pub lookup_result: LookupResult,
     pub polygon_id: u32,
@@ -9,7 +8,6 @@ pub struct ZoneDetectResult {
     pub fields: std::collections::HashMap<String, String>,
 }
 #[derive(Clone)]
-#[repr(C)]
 pub struct ZoneDetectOpaque {
     pub mapping: Vec<u8>,
     pub table_type: crate::TableType,
@@ -50,7 +48,6 @@ use crate::LookupResult;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Reader<'a> {
     pub library: &'a ZoneDetect,
     pub polygon_index: u32,
