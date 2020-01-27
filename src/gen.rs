@@ -362,9 +362,8 @@ unsafe fn ZDReaderGetPoint(
                     {
                         return -(1 as libc::c_int);
                     }
-                    reader.referenceStart = (*reader.library)
-                        .dataOffset
-                        .wrapping_add(start as u32);
+                    reader.referenceStart =
+                        (*reader.library).dataOffset.wrapping_add(start as u32);
                     reader.referenceEnd =
                         (*reader.library).dataOffset.wrapping_add(
                             (start as i64 + diff as libc::c_long) as u32,
