@@ -255,11 +255,7 @@ fn ZDUnshuffle(mut w: u64) -> u32 {
         & 0xffff_ffff as libc::c_uint as libc::c_ulong;
     w as u32
 }
-unsafe fn ZDDecodePoint(
-    mut point: u64,
-    mut lat: *mut i32,
-    mut lon: *mut i32,
-) {
+unsafe fn ZDDecodePoint(mut point: u64, mut lat: *mut i32, mut lon: *mut i32) {
     *lat = ZDDecodeUnsignedToSigned(ZDUnshuffle(point) as u64) as i32;
     *lon =
         ZDDecodeUnsignedToSigned(ZDUnshuffle(point >> 1 as libc::c_int) as u64)
