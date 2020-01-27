@@ -170,10 +170,10 @@ fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
         value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64
     }
 }
-unsafe fn ZDDecodeVariableLengthSigned(
+fn ZDDecodeVariableLengthSigned(
     library: &ZoneDetect,
     index: &mut u32,
-    mut result: *mut i32,
+    result: &mut i32,
 ) -> libc::c_uint {
     let mut value: u64 = 0 as libc::c_int as u64;
     let retVal: libc::c_uint =
