@@ -112,8 +112,8 @@ fn ZDFixedPointToFloat(
 }
 pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
     library: &ZoneDetect,
-    mut index: *mut u32,
-    mut result: *mut u64,
+    index: &mut u32,
+    result: &mut u64,
 ) -> libc::c_uint {
     if *index >= (*library).mapping.len() as u32 {
         return 0 as libc::c_int as libc::c_uint;
@@ -147,8 +147,8 @@ pub unsafe extern "C" fn ZDDecodeVariableLengthUnsigned(
 }
 unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     library: &ZoneDetect,
-    mut index: *mut u32,
-    mut result: *mut u64,
+    index: &mut u32,
+    result: &mut u64,
 ) -> libc::c_uint {
     let mut i: u32 = *index;
     if *index >= (*library).mapping.len() as u32 {
@@ -183,7 +183,7 @@ fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
 }
 unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     library: &ZoneDetect,
-    mut index: *mut u32,
+    index: &mut u32,
     mut result: *mut i32,
 ) -> libc::c_uint {
     let mut value: u64 = 0 as libc::c_int as u64;
@@ -194,7 +194,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
 }
 pub unsafe extern "C" fn ZDParseString(
     library: &ZoneDetect,
-    mut index: *mut u32,
+    index: &mut u32,
 ) -> Option<Vec<u8>> {
     let mut strLength: u64 = 0;
     if ZDDecodeVariableLengthUnsigned(library, index, &mut strLength) == 0 {
@@ -360,11 +360,11 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     (*reader).done = 2 as libc::c_int as u8
                 } else if value == 1 as libc::c_int as libc::c_ulong {
                     let mut diff: i32 = 0;
-                    let mut start: i64 = 0;
+                    let mut start: u64 = 0;
                     if ZDDecodeVariableLengthUnsigned(
                         (*reader).library,
                         &mut (*reader).polygonIndex,
-                        &mut start as *mut i64 as *mut u64,
+                        &mut start,
                     ) == 0
                     {
                         return -(1 as libc::c_int);
@@ -382,7 +382,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
                         .wrapping_add(start as u32);
                     (*reader).referenceEnd = (*(*reader).library)
                         .dataOffset
-                        .wrapping_add((start + diff as libc::c_long) as u32);
+                        .wrapping_add((start as i64 + diff as libc::c_long) as u32);
                     (*reader).referenceDirection = diff;
                     if diff < 0 as libc::c_int {
                         (*reader).referenceStart =
