@@ -263,8 +263,8 @@ fn ZDDecodePoint(point: u64, lat: &mut i32, lon: &mut i32) {
 
 unsafe fn ZDReaderGetPoint(
     mut reader: *mut Reader,
-    mut pointLat: *mut i32,
-    mut pointLon: *mut i32,
+    pointLat: &mut i32,
+    pointLon: &mut i32,
 ) -> libc::c_int {
     let mut referenceDone: u8 = 0;
     let mut diffLat: i32 = 0 as libc::c_int;
@@ -432,12 +432,8 @@ unsafe fn ZDReaderGetPoint(
     if referenceDone != 0 {
         (*reader).referenceDirection = 0 as libc::c_int
     }
-    if !pointLat.is_null() {
-        *pointLat = (*reader).pointLat
-    }
-    if !pointLon.is_null() {
-        *pointLon = (*reader).pointLon
-    }
+    *pointLat = (*reader).pointLat;
+    *pointLon = (*reader).pointLon;
     1 as libc::c_int
 }
 unsafe fn ZDFindPolygon(
@@ -538,7 +534,7 @@ fn ZDPolygonToListInternal(
 pub unsafe fn ZDPolygonToList(
     library: &ZoneDetect,
     mut polygonId: u32,
-    mut lengthPtr: *mut size_t,
+    lengthPtr: &mut size_t,
 ) -> Option<Vec<f32>> {
     let mut length: size_t = 0;
     let mut polygonIndex: u32 = 0;
@@ -567,9 +563,7 @@ pub unsafe fn ZDPolygonToList(
                     .wrapping_add(2 as libc::c_int as libc::c_ulong)
                     as size_t as size_t
             }
-            if !lengthPtr.is_null() {
-                *lengthPtr = length
-            }
+            *lengthPtr = length;
             return Some(flData);
         }
     }
