@@ -88,26 +88,26 @@ impl<'a> Reader<'a> {
 }
 
 fn ZDFloatToFixedPoint(
-    mut input: libc::c_float,
-    mut scale: libc::c_float,
+    mut input: f32,
+    mut scale: f32,
     mut precision: libc::c_uint,
 ) -> i32 {
-    let inputScaled: libc::c_float = input / scale;
+    let inputScaled: f32 = input / scale;
     (inputScaled
         * ((1 as libc::c_int)
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as libc::c_float) as i32
+            as f32) as i32
 }
 
 fn ZDFixedPointToFloat(
     mut input: i32,
-    mut scale: libc::c_float,
+    mut scale: f32,
     mut precision: libc::c_uint,
-) -> libc::c_float {
-    let value: libc::c_float = input as libc::c_float
+) -> f32 {
+    let value: f32 = input as f32
         / ((1 as libc::c_int)
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as libc::c_float;
+            as f32;
     value * scale
 }
 pub fn ZDDecodeVariableLengthUnsigned(
@@ -562,12 +562,12 @@ pub unsafe fn ZDPolygonToList(
                     as usize];
                 flData.push(ZDFixedPointToFloat(
                     lat,
-                    90 as libc::c_int as libc::c_float,
+                    90 as libc::c_int as f32,
                     (*library).precision as libc::c_uint,
                 ));
                 flData.push(ZDFixedPointToFloat(
                     lon,
-                    180 as libc::c_int as libc::c_float,
+                    180 as libc::c_int as f32,
                     (*library).precision as libc::c_uint,
                 ));
                 i = (i as libc::c_ulong)
@@ -629,8 +629,8 @@ unsafe extern "C" fn ZDPointInPolygon(
             if first == 0 {
                 let mut windingNeedCompare: libc::c_int = 0 as libc::c_int;
                 let mut lineIsStraight: libc::c_int = 0 as libc::c_int;
-                let mut a: libc::c_float = 0 as libc::c_int as libc::c_float;
-                let mut b: libc::c_float = 0 as libc::c_int as libc::c_float;
+                let mut a: f32 = 0 as libc::c_int as f32;
+                let mut b: f32 = 0 as libc::c_int as f32;
                 /* Calculate winding number */
                 if !(quadrant == prevQuadrant) {
                     if quadrant
@@ -653,11 +653,11 @@ unsafe extern "C" fn ZDPointInPolygon(
                 if lineIsStraight == 0
                     && (!distanceSqrMin.is_null() || windingNeedCompare != 0)
                 {
-                    a = (pointLat as libc::c_float - prevLat as libc::c_float)
-                        / (pointLon as libc::c_float
-                            - prevLon as libc::c_float);
-                    b = pointLat as libc::c_float
-                        - a * pointLon as libc::c_float
+                    a = (pointLat as f32 - prevLat as f32)
+                        / (pointLon as f32
+                            - prevLon as f32);
+                    b = pointLat as f32
+                        - a * pointLon as f32
                 }
                 let mut onStraight = ZDPointInBox(
                     pointLat,
@@ -679,7 +679,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                 if windingNeedCompare != 0 {
                     /* Check if the target is on the border */
                     let intersectLon: i32 =
-                        ((latFixedPoint as libc::c_float - b) / a) as i32;
+                        ((latFixedPoint as f32 - b) / a) as i32;
                     if intersectLon >= lonFixedPoint - 1 as libc::c_int
                         && intersectLon <= lonFixedPoint + 1 as libc::c_int
                     {
@@ -704,24 +704,24 @@ unsafe extern "C" fn ZDPointInPolygon(
                 }
                 /* Calculate closest point on line (if needed) */
                 if !distanceSqrMin.is_null() {
-                    let mut closestLon: libc::c_float = 0.;
-                    let mut closestLat: libc::c_float = 0.;
+                    let mut closestLon: f32 = 0.;
+                    let mut closestLat: f32 = 0.;
                     if lineIsStraight == 0 {
-                        closestLon = (lonFixedPoint as libc::c_float
-                            + a * latFixedPoint as libc::c_float
+                        closestLon = (lonFixedPoint as f32
+                            + a * latFixedPoint as f32
                             - a * b)
-                            / (a * a + 1 as libc::c_int as libc::c_float);
+                            / (a * a + 1 as libc::c_int as f32);
                         closestLat = (a
-                            * (lonFixedPoint as libc::c_float
-                                + a * latFixedPoint as libc::c_float)
+                            * (lonFixedPoint as f32
+                                + a * latFixedPoint as f32)
                             + b)
-                            / (a * a + 1 as libc::c_int as libc::c_float)
+                            / (a * a + 1 as libc::c_int as f32)
                     } else if pointLon == prevLon {
-                        closestLon = pointLon as libc::c_float;
-                        closestLat = latFixedPoint as libc::c_float
+                        closestLon = pointLon as f32;
+                        closestLat = latFixedPoint as f32
                     } else {
-                        closestLon = lonFixedPoint as libc::c_float;
-                        closestLat = pointLat as libc::c_float
+                        closestLon = lonFixedPoint as f32;
+                        closestLat = pointLat as f32
                     }
                     let closestInBox = ZDPointInBox(
                         pointLon,
@@ -735,10 +735,10 @@ unsafe extern "C" fn ZDPointInPolygon(
                     let mut diffLon: i64 = 0;
                     if closestInBox {
                         /* Calculate squared distance to segment. */
-                        diffLat = (closestLat - latFixedPoint as libc::c_float)
+                        diffLat = (closestLat - latFixedPoint as f32)
                             as i64;
                         diffLon =
-                            (closestLon - lonFixedPoint as libc::c_float) as i64
+                            (closestLon - lonFixedPoint as f32) as i64
                     } else {
                         /*
                          * Calculate squared distance to vertices
@@ -787,12 +787,12 @@ pub unsafe extern "C" fn ZDLookup(
 ) -> Vec<ZoneDetectResult> {
     let latFixedPoint: i32 = ZDFloatToFixedPoint(
         location.latitude,
-        90 as libc::c_int as libc::c_float,
+        90 as libc::c_int as f32,
         (*library).precision as libc::c_uint,
     );
     let lonFixedPoint: i32 = ZDFloatToFixedPoint(
         location.longitude,
-        180 as libc::c_int as libc::c_float,
+        180 as libc::c_int as f32,
         (*library).precision as libc::c_uint,
     );
     let mut distanceSqrMin: u64 = -(1 as libc::c_int) as u64;
