@@ -432,12 +432,16 @@ fn ZDReaderGetPoint(
     1 as libc::c_int
 }
 
-unsafe fn ZDPointInPolygon(
+fn ZDPointInPolygon(
     mut library: &ZoneDetect,
     mut polygonIndex: u32,
     mut latFixedPoint: i32,
     mut lonFixedPoint: i32,
-    mut distanceSqrMin: *mut u64,
+    // TODO: it seems like these could be combined into an
+    // Option<&mut u64>, but I coudln't figure out how to make
+    // that compile
+    calcDistanceSqrMin: bool,
+    mut distanceSqrMin: &mut u64,
 ) -> LookupResult {
     let mut pointLat: i32 = 0;
     let mut pointLon: i32 = 0;
@@ -458,7 +462,7 @@ unsafe fn ZDPointInPolygon(
             }
             /* Check if point is ON the border */
             if pointLat == latFixedPoint && pointLon == lonFixedPoint {
-                if !distanceSqrMin.is_null() {
+                if calcDistanceSqrMin {
                     *distanceSqrMin = 0 as libc::c_int as u64
                 }
                 return LookupResult::OnBorderVertex;
@@ -501,7 +505,7 @@ unsafe fn ZDPointInPolygon(
                 }
                 /* Calculate the parameters of y=ax+b if needed */
                 if lineIsStraight == 0
-                    && (!distanceSqrMin.is_null() || windingNeedCompare != 0)
+                    && (calcDistanceSqrMin || windingNeedCompare != 0)
                 {
                     a = (pointLat as f32 - prevLat as f32)
                         / (pointLon as f32 - prevLon as f32);
@@ -518,7 +522,7 @@ unsafe fn ZDPointInPolygon(
                 if lineIsStraight != 0
                     && (onStraight || windingNeedCompare != 0)
                 {
-                    if !distanceSqrMin.is_null() {
+                    if calcDistanceSqrMin {
                         *distanceSqrMin = 0 as libc::c_int as u64
                     }
                     return LookupResult::OnBorderSegment;
@@ -531,7 +535,7 @@ unsafe fn ZDPointInPolygon(
                     if intersectLon >= lonFixedPoint - 1 as libc::c_int
                         && intersectLon <= lonFixedPoint + 1 as libc::c_int
                     {
-                        if !distanceSqrMin.is_null() {
+                        if calcDistanceSqrMin {
                             *distanceSqrMin = 0 as libc::c_int as u64
                         }
                         return LookupResult::OnBorderSegment;
@@ -551,7 +555,7 @@ unsafe fn ZDPointInPolygon(
                     }
                 }
                 /* Calculate closest point on line (if needed) */
-                if !distanceSqrMin.is_null() {
+                if calcDistanceSqrMin {
                     let mut closestLon: f32 = 0.;
                     let mut closestLat: f32 = 0.;
                     if lineIsStraight == 0 {
@@ -618,7 +622,7 @@ unsafe fn ZDPointInPolygon(
         return LookupResult::NotInZone;
     }
     /* Should not happen */
-    if !distanceSqrMin.is_null() {
+    if calcDistanceSqrMin {
         *distanceSqrMin = 0 as libc::c_int as u64
     }
     LookupResult::OnBorderSegment
@@ -708,11 +712,8 @@ pub unsafe fn ZDLookup(
                 library.dataOffset.wrapping_add(polygonIndex),
                 latFixedPoint,
                 lonFixedPoint,
-                if safezone.is_some() {
-                    &mut distanceSqrMin
-                } else {
-                    std::ptr::null_mut()
-                },
+                safezone.is_some(),
+                &mut distanceSqrMin,
             );
             if lookupResult == LookupResult::ParseError {
                 break;
