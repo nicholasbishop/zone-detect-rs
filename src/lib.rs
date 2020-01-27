@@ -1,6 +1,5 @@
 mod gen;
 
-pub use gen::ZoneDetectResult;
 use std::{convert::TryInto, fs, io, path::Path, string::FromUtf8Error};
 
 #[derive(Debug, thiserror::Error)]
@@ -69,6 +68,15 @@ pub fn parse_string(
     } else {
         Err(StringParseError::EncodingError)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ZoneDetectResult {
+    pub lookup_result: LookupResult,
+    pub polygon_id: u32,
+    pub meta_id: u32,
+    // TODO: maybe change this to &str
+    pub fields: std::collections::HashMap<String, String>,
 }
 
 pub struct Database {

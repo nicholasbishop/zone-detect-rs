@@ -1,13 +1,6 @@
 #![allow(clippy::cognitive_complexity)]
-#[derive(Clone, Debug)]
-pub struct ZoneDetectResult {
-    pub lookup_result: LookupResult,
-    pub polygon_id: u32,
-    pub meta_id: u32,
-    // TODO: maybe change this to &str
-    pub fields: std::collections::HashMap<String, String>,
-}
-use crate::{Database as ZoneDetect, LookupResult};
+
+use crate::{Database as ZoneDetect, LookupResult, ZoneDetectResult};
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
  * All rights reserved.
