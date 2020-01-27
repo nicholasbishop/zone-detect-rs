@@ -626,7 +626,7 @@ unsafe fn ZDPointInPolygon(
                 let mut a: f32 = 0 as libc::c_int as f32;
                 let mut b: f32 = 0 as libc::c_int as f32;
                 /* Calculate winding number */
-                if !(quadrant == prevQuadrant) {
+                if quadrant != prevQuadrant {
                     if quadrant
                         == (prevQuadrant + 1 as libc::c_int) % 4 as libc::c_int
                     {
