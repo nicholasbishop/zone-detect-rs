@@ -1,5 +1,5 @@
 #![allow(dead_code, non_camel_case_types, non_snake_case,
-         unused_assignments, unused_mut,
+         unused_assignments,
          clippy::cognitive_complexity)]
 type size_t = libc::c_ulong;
 #[derive(Clone, Debug)]
@@ -89,9 +89,9 @@ impl<'a> Reader<'a> {
 }
 
 fn float_to_fixed_point(
-    mut input: f32,
-    mut scale: f32,
-    mut precision: libc::c_uint,
+    input: f32,
+    scale: f32,
+    precision: libc::c_uint,
 ) -> i32 {
     let inputScaled: f32 = input / scale;
     (inputScaled
@@ -101,9 +101,9 @@ fn float_to_fixed_point(
 }
 
 fn fixed_point_to_float(
-    mut input: i32,
-    mut scale: f32,
-    mut precision: libc::c_uint,
+    input: i32,
+    scale: f32,
+    precision: libc::c_uint,
 ) -> f32 {
     let value: f32 = input as f32
         / ((1 as libc::c_int)
@@ -164,7 +164,7 @@ fn decode_variable_length_unsigned_reverse(
     let mut i2: u32 = i;
     decode_variable_length_unsigned(library, &mut i2, result)
 }
-fn decode_unsigned_to_signed(mut value: u64) -> i64 {
+fn decode_unsigned_to_signed(value: u64) -> i64 {
     if value & 1 as libc::c_int as libc::c_ulong != 0 {
         -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64)
     } else {
@@ -226,12 +226,12 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
 }
 
 fn point_in_box(
-    mut xl: i32,
-    mut x: i32,
-    mut xr: i32,
-    mut yl: i32,
-    mut y: i32,
-    mut yr: i32,
+    xl: i32,
+    x: i32,
+    xr: i32,
+    yl: i32,
+    y: i32,
+    yr: i32,
 ) -> bool {
     (xl <= x && x <= xr || xr <= x && x <= xl)
         && (yl <= y && y <= yr || yr <= y && y <= yl)
@@ -433,15 +433,15 @@ fn reader_get_point(
 }
 
 fn point_in_polygon(
-    mut library: &ZoneDetect,
-    mut polygonIndex: u32,
-    mut latFixedPoint: i32,
-    mut lonFixedPoint: i32,
+    library: &ZoneDetect,
+    polygonIndex: u32,
+    latFixedPoint: i32,
+    lonFixedPoint: i32,
     // TODO: it seems like these could be combined into an
     // Option<&mut u64>, but I coudln't figure out how to make
     // that compile
     calcDistanceSqrMin: bool,
-    mut distanceSqrMin: &mut u64,
+    distanceSqrMin: &mut u64,
 ) -> LookupResult {
     let mut pointLat: i32 = 0;
     let mut pointLon: i32 = 0;
@@ -452,7 +452,7 @@ fn point_in_polygon(
     let mut first: u8 = 1 as libc::c_int as u8;
     let mut reader = Reader::new(library, polygonIndex);
     loop {
-        let mut result: libc::c_int =
+        let result: libc::c_int =
             reader_get_point(&mut reader, &mut pointLat, &mut pointLon);
         if result < 0 as libc::c_int {
             return LookupResult::ParseError;
@@ -511,7 +511,7 @@ fn point_in_polygon(
                         / (pointLon as f32 - prevLon as f32);
                     b = pointLat as f32 - a * pointLon as f32
                 }
-                let mut onStraight = point_in_box(
+                let onStraight = point_in_box(
                     pointLat,
                     latFixedPoint,
                     prevLat,
@@ -597,7 +597,7 @@ fn point_in_polygon(
                         diffLon = (pointLon - lonFixedPoint) as i64
                     }
                     /* Note: lon has half scale */
-                    let mut distanceSqr: u64 = ((diffLat * diffLat) as u64)
+                    let distanceSqr: u64 = ((diffLat * diffLat) as u64)
                         .wrapping_add(
                             ((diffLon * diffLon) as u64).wrapping_mul(
                                 4 as libc::c_int as libc::c_ulong,
@@ -629,9 +629,9 @@ fn point_in_polygon(
 }
 
 pub fn lookup(
-    mut library: &ZoneDetect,
+    library: &ZoneDetect,
     location: crate::Location,
-    mut safezone: Option<&mut f32>,
+    safezone: Option<&mut f32>,
 ) -> Vec<ZoneDetectResult> {
     let latFixedPoint: i32 = float_to_fixed_point(
         location.latitude,
@@ -739,7 +739,7 @@ pub fn lookup(
         let mut j: size_t = i;
         while j < results.len() as u64 {
             if results[i as usize].metaId == results[j as usize].metaId {
-                let mut tmpResult = results[j as usize].lookupResult;
+                let tmpResult = results[j as usize].lookupResult;
                 results[j as usize].lookupResult = LookupResult::Ignore;
                 /* This is the same result. Is it an exclusion zone? */
                 if tmpResult == LookupResult::InZone {
