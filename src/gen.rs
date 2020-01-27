@@ -123,12 +123,9 @@ pub fn ZDDecodeVariableLengthUnsigned(
     let buffer = &library.mapping[*index as usize..];
     let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     for byte in buffer {
-        value |= (*byte as u64
-            & 0x7f as libc::c_int as libc::c_ulong)
-            << shift;
+        value |= (*byte as u64 & 0x7f as libc::c_int as libc::c_ulong) << shift;
         shift = shift.wrapping_add(7 as libc::c_uint);
-        if *byte as libc::c_int & 0x80 as libc::c_int == 0
-        {
+        if *byte as libc::c_int & 0x80 as libc::c_int == 0 {
             break;
         }
         i = i.wrapping_add(1);
@@ -373,9 +370,10 @@ unsafe extern "C" fn ZDReaderGetPoint(
                     (*reader).referenceStart = (*(*reader).library)
                         .dataOffset
                         .wrapping_add(start as u32);
-                    (*reader).referenceEnd = (*(*reader).library)
-                        .dataOffset
-                        .wrapping_add((start as i64 + diff as libc::c_long) as u32);
+                    (*reader).referenceEnd =
+                        (*(*reader).library).dataOffset.wrapping_add(
+                            (start as i64 + diff as libc::c_long) as u32,
+                        );
                     (*reader).referenceDirection = diff;
                     if diff < 0 as libc::c_int {
                         (*reader).referenceStart =
@@ -654,10 +652,8 @@ unsafe extern "C" fn ZDPointInPolygon(
                     && (!distanceSqrMin.is_null() || windingNeedCompare != 0)
                 {
                     a = (pointLat as f32 - prevLat as f32)
-                        / (pointLon as f32
-                            - prevLon as f32);
-                    b = pointLat as f32
-                        - a * pointLon as f32
+                        / (pointLon as f32 - prevLon as f32);
+                    b = pointLat as f32 - a * pointLon as f32
                 }
                 let mut onStraight = ZDPointInBox(
                     pointLat,
@@ -712,8 +708,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                             - a * b)
                             / (a * a + 1 as libc::c_int as f32);
                         closestLat = (a
-                            * (lonFixedPoint as f32
-                                + a * latFixedPoint as f32)
+                            * (lonFixedPoint as f32 + a * latFixedPoint as f32)
                             + b)
                             / (a * a + 1 as libc::c_int as f32)
                     } else if pointLon == prevLon {
@@ -735,10 +730,8 @@ unsafe extern "C" fn ZDPointInPolygon(
                     let mut diffLon: i64 = 0;
                     if closestInBox {
                         /* Calculate squared distance to segment. */
-                        diffLat = (closestLat - latFixedPoint as f32)
-                            as i64;
-                        diffLon =
-                            (closestLon - lonFixedPoint as f32) as i64
+                        diffLat = (closestLat - latFixedPoint as f32) as i64;
+                        diffLon = (closestLon - lonFixedPoint as f32) as i64
                     } else {
                         /*
                          * Calculate squared distance to vertices

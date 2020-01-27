@@ -167,20 +167,17 @@ impl Database {
 
         // Read section sizes. Note that bboxOffset is already initialized to zero.
         let mut tmp: u64 = 0;
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0
-        {
+        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidMetadataOffset);
         }
         db.metadataOffset = tmp as u32 + db.bboxOffset;
 
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0
-        {
+        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidDataOffset);
         }
         db.dataOffset = tmp as u32 + db.metadataOffset;
 
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0
-        {
+        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidPaddingOffset);
         }
 
