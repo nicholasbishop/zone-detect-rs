@@ -196,7 +196,7 @@ impl Database {
     }
 
     pub fn simple_lookup(&self, location: Location) -> Option<String> {
-        let results = unsafe { gen::ZDLookup(&self.library, location, None) };
+        let results = gen::ZDLookup(&self.library, location, None);
 
         if let Some(result) = results.first() {
             match self.library.tableType {
@@ -219,9 +219,8 @@ impl Database {
 
     pub fn lookup(&self, location: Location) -> (Vec<ZoneDetectResult>, f32) {
         let mut safezone: f32 = 0.0;
-        let results = unsafe {
-            gen::ZDLookup(&self.library, location, Some(&mut safezone))
-        };
+        let results =
+            gen::ZDLookup(&self.library, location, Some(&mut safezone));
         (results, safezone)
     }
 }

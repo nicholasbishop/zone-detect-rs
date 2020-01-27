@@ -628,7 +628,7 @@ fn ZDPointInPolygon(
     LookupResult::OnBorderSegment
 }
 
-pub unsafe fn ZDLookup(
+pub fn ZDLookup(
     mut library: &ZoneDetect,
     location: crate::Location,
     mut safezone: Option<&mut f32>,
