@@ -253,13 +253,13 @@ unsafe extern "C" fn ZDPointInBox(
     mut yl: i32,
     mut y: i32,
     mut yr: i32,
-) -> libc::c_int {
+) -> bool {
     if xl <= x && x <= xr || xr <= x && x <= xl {
         if yl <= y && y <= yr || yr <= y && y <= yl {
-            return 1 as libc::c_int;
+            return true;
         }
     }
-    0 as libc::c_int
+    false
 }
 unsafe extern "C" fn ZDUnshuffle(mut w: u64) -> u32 {
     w &= 0x5555555555555555 as libc::c_long as libc::c_ulong;
@@ -676,7 +676,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                     b = pointLat as libc::c_float
                         - a * pointLon as libc::c_float
                 }
-                let mut onStraight: libc::c_int = ZDPointInBox(
+                let mut onStraight = ZDPointInBox(
                     pointLat,
                     latFixedPoint,
                     prevLat,
@@ -685,7 +685,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                     prevLon,
                 );
                 if lineIsStraight != 0
-                    && (onStraight != 0 || windingNeedCompare != 0)
+                    && (onStraight || windingNeedCompare != 0)
                 {
                     if !distanceSqrMin.is_null() {
                         *distanceSqrMin = 0 as libc::c_int as u64
@@ -740,7 +740,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                         closestLon = lonFixedPoint as libc::c_float;
                         closestLat = pointLat as libc::c_float
                     }
-                    let closestInBox: libc::c_int = ZDPointInBox(
+                    let closestInBox = ZDPointInBox(
                         pointLon,
                         closestLon as i32,
                         prevLon,
@@ -750,7 +750,7 @@ unsafe extern "C" fn ZDPointInPolygon(
                     );
                     let mut diffLat: i64 = 0;
                     let mut diffLon: i64 = 0;
-                    if closestInBox != 0 {
+                    if closestInBox {
                         /* Calculate squared distance to segment. */
                         diffLat = (closestLat - latFixedPoint as libc::c_float)
                             as i64;
