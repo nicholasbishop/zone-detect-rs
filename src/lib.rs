@@ -101,13 +101,13 @@ impl Database {
             library: gen::ZoneDetect {
                 mapping,
                 notice: String::new(),
-                tableType: TableType::Country,
+                table_type: TableType::Country,
                 version: 0,
                 precision: 0,
-                fieldNames: Vec::new(),
-                bboxOffset: 0,
-                metadataOffset: 0,
-                dataOffset: 0,
+                field_names: Vec::new(),
+                bbox_offset: 0,
+                metadata_offset: 0,
+                data_offset: 0,
             },
         };
         Self::parse_header(&mut db.library)?;
@@ -115,7 +115,7 @@ impl Database {
     }
 
     pub fn table_type(&self) -> TableType {
-        self.library.tableType
+        self.library.table_type
     }
 
     pub fn notice(&self) -> &str {
@@ -141,9 +141,9 @@ impl Database {
         let num_fields = db.mapping[6];
 
         if table_type == b'T' {
-            db.tableType = TableType::Timezone;
+            db.table_type = TableType::Timezone;
         } else if table_type == b'C' {
-            db.tableType = TableType::Country;
+            db.table_type = TableType::Country;
         } else {
             return Err(Error::InvalidTableType(table_type));
         }
@@ -155,11 +155,11 @@ impl Database {
         // Start reading at byte 7
         let mut index = 7;
 
-        db.fieldNames.reserve(num_fields as usize);
+        db.field_names.reserve(num_fields as usize);
         for field_index in 0..num_fields {
             let name = parse_string(db, &mut index)
                 .map_err(|err| Error::InvalidFieldName(field_index, err))?;
-            db.fieldNames.push(name);
+            db.field_names.push(name);
         }
 
         db.notice =
@@ -170,24 +170,24 @@ impl Database {
         if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidMetadataOffset);
         }
-        db.metadataOffset = tmp as u32 + db.bboxOffset;
+        db.metadata_offset = tmp as u32 + db.bbox_offset;
 
         if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidDataOffset);
         }
-        db.dataOffset = tmp as u32 + db.metadataOffset;
+        db.data_offset = tmp as u32 + db.metadata_offset;
 
         if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidPaddingOffset);
         }
 
         // Add header size to everything
-        db.bboxOffset += index;
-        db.metadataOffset += index;
-        db.dataOffset += index;
+        db.bbox_offset += index;
+        db.metadata_offset += index;
+        db.data_offset += index;
 
         // Verify file length
-        let length = (tmp + db.dataOffset as u64) as usize;
+        let length = (tmp + db.data_offset as u64) as usize;
         if length != db.mapping.len() {
             return Err(Error::LengthMismatch(length as usize));
         }
@@ -199,7 +199,7 @@ impl Database {
         let results = gen::lookup(&self.library, location, None);
 
         if let Some(result) = results.first() {
-            match self.library.tableType {
+            match self.library.table_type {
                 TableType::Country => result.fields.get("Name"),
                 TableType::Timezone => {
                     if let Some(prefix) = result.fields.get("TimezoneIdPrefix")
@@ -231,14 +231,14 @@ mod tests {
     #[test]
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
-        assert_eq!(db.library.bboxOffset, 288);
-        assert_eq!(db.library.metadataOffset, 33429);
-        assert_eq!(db.library.dataOffset, 42557);
+        assert_eq!(db.library.bbox_offset, 288);
+        assert_eq!(db.library.metadata_offset, 33429);
+        assert_eq!(db.library.data_offset, 42557);
         assert_eq!(db.library.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
-        assert_eq!(db.library.tableType, TableType::Timezone);
+        assert_eq!(db.library.table_type, TableType::Timezone);
         assert_eq!(db.library.precision, 21);
         assert_eq!(
-            db.library.fieldNames,
+            db.library.field_names,
             vec![
                 "TimezoneIdPrefix".to_string(),
                 "TimezoneId".to_string(),

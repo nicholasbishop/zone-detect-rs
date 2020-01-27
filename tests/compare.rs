@@ -41,9 +41,9 @@ fn lookup(
     let (results, safezone) = db.lookup(location);
     for result in &results {
         output +=
-            &format!("{}:\n", lookup_result_to_string(result.lookupResult));
-        output += &format!("  meta: {}\n", result.metaId);
-        output += &format!("  polygon: {}\n", result.polygonId);
+            &format!("{}:\n", lookup_result_to_string(result.lookup_result));
+        output += &format!("  meta: {}\n", result.meta_id);
+        output += &format!("  polygon: {}\n", result.polygon_id);
         output += &format!(
             "  TimezoneIdPrefix: {}\n",
             result.fields.get("TimezoneIdPrefix").unwrap()
