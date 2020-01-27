@@ -13,11 +13,11 @@ struct Opt {
 
 fn lookup(opt: &Opt) -> Result<(), zone_detect::Error> {
     let database = Database::open(&opt.database_path)?;
-    let (zones, _) = database.lookup(Location {
+    let result = database.lookup(Location {
         latitude: opt.latitude,
         longitude: opt.longitude,
     });
-    for (index, zone) in zones.iter().enumerate() {
+    for (index, zone) in result.matches.iter().enumerate() {
         println!("zone {}: {:#?}", index, zone);
     }
     Ok(())

@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use zone_detect::{Database, Location, LookupResult, ZoneDetectResult};
+use zone_detect::{Database, Location, ZoneMatch, ZoneMatchKind};
 
 fn random_location(rng: &mut StdRng) -> Location {
     Location {
@@ -20,53 +20,45 @@ fn get_demo_path() -> PathBuf {
     path.into()
 }
 
-fn lookup_result_to_string(result: LookupResult) -> &'static str {
+fn lookup_result_to_string(result: ZoneMatchKind) -> &'static str {
     match result {
-        LookupResult::Ignore => "Ignore",
-        LookupResult::End => "End",
-        LookupResult::ParseError => "Parsing error",
-        LookupResult::NotInZone => "Not in zone",
-        LookupResult::InZone => "In zone",
-        LookupResult::InExcludedZone => "In excluded zone",
-        LookupResult::OnBorderVertex => "Target point is border vertex",
-        LookupResult::OnBorderSegment => "Target point is on border",
+        ZoneMatchKind::InZone => "In zone",
+        ZoneMatchKind::InExcludedZone => "In excluded zone",
+        ZoneMatchKind::OnBorderVertex => "Target point is border vertex",
+        ZoneMatchKind::OnBorderSegment => "Target point is on border",
     }
 }
 
-fn lookup(
-    db: &Database,
-    location: Location,
-) -> (String, Vec<ZoneDetectResult>) {
+fn lookup(db: &Database, location: Location) -> (String, Vec<ZoneMatch>) {
     let mut output = String::new();
-    let (results, safezone) = db.lookup(location);
-    for result in &results {
-        output +=
-            &format!("{}:\n", lookup_result_to_string(result.lookup_result));
-        output += &format!("  meta: {}\n", result.meta_id);
-        output += &format!("  polygon: {}\n", result.polygon_id);
+    let result = db.lookup(location);
+    for result in &result.matches {
+        output += &format!("{}:\n", lookup_result_to_string(result.kind));
+        output += &format!("  meta: {}\n", result.zone.meta_id);
+        output += &format!("  polygon: {}\n", result.zone.polygon_id);
         output += &format!(
             "  TimezoneIdPrefix: {}\n",
-            result.fields.get("TimezoneIdPrefix").unwrap()
+            result.zone.fields.get("TimezoneIdPrefix").unwrap()
         );
         output += &format!(
             "  TimezoneId: {}\n",
-            result.fields.get("TimezoneId").unwrap()
+            result.zone.fields.get("TimezoneId").unwrap()
         );
         output += &format!(
             "  CountryAlpha2: {}\n",
-            result.fields.get("CountryAlpha2").unwrap()
+            result.zone.fields.get("CountryAlpha2").unwrap()
         );
         output += &format!(
             "  CountryName: {}\n",
-            result.fields.get("CountryName").unwrap()
+            result.zone.fields.get("CountryName").unwrap()
         );
     }
-    output += &format!("Safezone: {:.6}\n", safezone);
+    output += &format!("Safezone: {:.6}\n", result.safezone);
     output += &format!(
         "The simple string is [{}]\n",
         db.simple_lookup(location).unwrap()
     );
-    (output, results)
+    (output, result.matches)
 }
 
 /// This test compares the output against that of the demo program in

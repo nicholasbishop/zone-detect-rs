@@ -51,6 +51,51 @@ pub struct Zone {
 }
 
 #[allow(missing_docs)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ZoneMatchKind {
+    InZone,
+    InExcludedZone,
+    OnBorderVertex,
+    OnBorderSegment,
+}
+
+impl ZoneMatchKind {
+    fn from_point_lookup(r: gen::PointLookupResult) -> Option<ZoneMatchKind> {
+        match r {
+            gen::PointLookupResult::InZone => Some(ZoneMatchKind::InZone),
+            gen::PointLookupResult::InExcludedZone => {
+                Some(ZoneMatchKind::InExcludedZone)
+            }
+            gen::PointLookupResult::OnBorderVertex => {
+                Some(ZoneMatchKind::OnBorderVertex)
+            }
+            gen::PointLookupResult::OnBorderSegment => {
+                Some(ZoneMatchKind::OnBorderSegment)
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Zone retrieved from the database, along with the type of result.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ZoneMatch {
+    /// Type of match.
+    pub kind: ZoneMatchKind,
+    /// Zone information.
+    pub zone: Zone,
+}
+
+/// Matching zones and safezone from a database lookup.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ZoneLookup {
+    /// List of matching zones.
+    pub matches: Vec<ZoneMatch>,
+    /// TODO: not sure what this value is
+    pub safezone: f32,
+}
+
+#[allow(missing_docs)]
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("IO error")]
@@ -91,20 +136,6 @@ pub enum TableType {
 #[allow(missing_docs)]
 pub type Result<T> = std::result::Result<T, Error>;
 
-// TODO: limit this to just public types
-#[allow(missing_docs)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum LookupResult {
-    Ignore = -3,
-    End = -2,
-    ParseError = -1,
-    NotInZone = 0,
-    InZone = 1,
-    InExcludedZone = 2,
-    OnBorderVertex = 3,
-    OnBorderSegment = 4,
-}
-
 #[allow(missing_docs)]
 #[derive(Debug, thiserror::Error)]
 pub enum StringParseError {
@@ -124,17 +155,6 @@ fn parse_string(
     } else {
         Err(StringParseError::EncodingError)
     }
-}
-
-// TODO: use Zone
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct ZoneDetectResult {
-    pub lookup_result: LookupResult,
-    pub polygon_id: u32,
-    pub meta_id: u32,
-    // TODO: maybe change this to &str
-    pub fields: HashMap<String, String>,
 }
 
 /// Zone database.
@@ -262,11 +282,12 @@ impl Database {
 
         if let Some(result) = results.first() {
             match self.table_type {
-                TableType::Country => result.fields.get("Name"),
+                TableType::Country => result.zone.fields.get("Name"),
                 TableType::Timezone => {
-                    if let Some(prefix) = result.fields.get("TimezoneIdPrefix")
+                    if let Some(prefix) =
+                        result.zone.fields.get("TimezoneIdPrefix")
                     {
-                        if let Some(id) = result.fields.get("TimezoneId") {
+                        if let Some(id) = result.zone.fields.get("TimezoneId") {
                             return Some(format!("{}{}", prefix, id));
                         }
                     }
@@ -280,13 +301,22 @@ impl Database {
     }
 
     /// Perform a full database lookup for a location.
-    ///
-    /// This returns a pair containing all the Zones matching the
-    /// location, as well the safezone float.
-    pub fn lookup(&self, location: Location) -> (Vec<ZoneDetectResult>, f32) {
+    pub fn lookup(&self, location: Location) -> ZoneLookup {
         let mut safezone: f32 = 0.0;
         let results = gen::lookup(&self, location, Some(&mut safezone));
-        (results, safezone)
+        let matches = results
+            .iter()
+            .map(|r| {
+                ZoneMatch {
+                    // Unwrapping should be OK here since the lookup
+                    // function already filters out other kinds of results
+                    kind: ZoneMatchKind::from_point_lookup(r.result)
+                        .expect("invalid match kind"),
+                    zone: r.zone.clone(),
+                }
+            })
+            .collect::<Vec<_>>();
+        ZoneLookup { matches, safezone }
     }
 }
 

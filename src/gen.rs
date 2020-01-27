@@ -6,7 +6,9 @@
 
 #![allow(clippy::cognitive_complexity)]
 
-use crate::{Database as ZoneDetect, LookupResult, ZoneDetectResult};
+// TODO
+use crate::{Database as ZoneDetect, Zone};
+
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
  * All rights reserved.
@@ -378,6 +380,17 @@ fn reader_get_point(
     1 as i32
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PointLookupResult {
+    Ignore,
+    ParseError,
+    NotInZone,
+    InZone,
+    InExcludedZone,
+    OnBorderVertex,
+    OnBorderSegment,
+}
+
 fn point_in_polygon(
     library: &ZoneDetect,
     polygon_index: u32,
@@ -388,7 +401,7 @@ fn point_in_polygon(
     // that compile
     calc_distance_sqr_min: bool,
     distance_sqr_min: &mut u64,
-) -> LookupResult {
+) -> PointLookupResult {
     let mut point_lat: i32 = 0;
     let mut point_lon: i32 = 0;
     let mut prev_lat: i32 = 0 as i32;
@@ -401,7 +414,7 @@ fn point_in_polygon(
         let result: i32 =
             reader_get_point(&mut reader, &mut point_lat, &mut point_lon);
         if result < 0 as i32 {
-            return LookupResult::ParseError;
+            return PointLookupResult::ParseError;
         } else {
             if result == 0 as i32 {
                 break;
@@ -411,7 +424,7 @@ fn point_in_polygon(
                 if calc_distance_sqr_min {
                     *distance_sqr_min = 0 as i32 as u64
                 }
-                return LookupResult::OnBorderVertex;
+                return PointLookupResult::OnBorderVertex;
             }
             /* Find quadrant */
             let quadrant: i32;
@@ -468,7 +481,7 @@ fn point_in_polygon(
                     if calc_distance_sqr_min {
                         *distance_sqr_min = 0 as i32 as u64
                     }
-                    return LookupResult::OnBorderSegment;
+                    return PointLookupResult::OnBorderSegment;
                 }
                 /* Jumped two quadrants. */
                 if winding_need_compare != 0 {
@@ -481,7 +494,7 @@ fn point_in_polygon(
                         if calc_distance_sqr_min {
                             *distance_sqr_min = 0 as i32 as u64
                         }
-                        return LookupResult::OnBorderSegment;
+                        return PointLookupResult::OnBorderSegment;
                     }
                     /* Ok, it's not. In which direction did we go round the target? */
                     let sign: i32 = if intersect_lon < lon_fixed_point {
@@ -557,17 +570,22 @@ fn point_in_polygon(
         }
     }
     if winding == -(4 as i32) {
-        return LookupResult::InZone;
+        return PointLookupResult::InZone;
     } else if winding == 4 as i32 {
-        return LookupResult::InExcludedZone;
+        return PointLookupResult::InExcludedZone;
     } else if winding == 0 as i32 {
-        return LookupResult::NotInZone;
+        return PointLookupResult::NotInZone;
     }
     /* Should not happen */
     if calc_distance_sqr_min {
         *distance_sqr_min = 0 as i32 as u64
     }
-    LookupResult::OnBorderSegment
+    PointLookupResult::OnBorderSegment
+}
+
+pub struct ZoneDetectResult {
+    pub result: PointLookupResult,
+    pub zone: Zone,
 }
 
 pub fn lookup(
@@ -657,17 +675,19 @@ pub fn lookup(
                 safezone.is_some(),
                 &mut distance_sqr_min,
             );
-            if lookup_result == LookupResult::ParseError {
+            if lookup_result == PointLookupResult::ParseError {
                 break;
             }
-            if lookup_result != LookupResult::NotInZone {
+            if lookup_result != PointLookupResult::NotInZone {
                 results.push(ZoneDetectResult {
-                    polygon_id,
-                    meta_id: metadata_index,
-                    fields: std::collections::HashMap::with_capacity(
-                        library.field_names.len(),
-                    ),
-                    lookup_result,
+                    zone: Zone {
+                        polygon_id,
+                        meta_id: metadata_index,
+                        fields: std::collections::HashMap::with_capacity(
+                            library.field_names.len(),
+                        ),
+                    },
+                    result: lookup_result,
                 });
             }
         }
@@ -676,15 +696,17 @@ pub fn lookup(
     /* Clean up results */
     for i in 0..results.len() {
         let mut inside_sum: i32 = 0 as i32;
-        let mut override_result = LookupResult::Ignore;
+        let mut override_result = PointLookupResult::Ignore;
         for j in i..results.len() {
-            if results[i as usize].meta_id == results[j as usize].meta_id {
-                let tmp_result = results[j as usize].lookup_result;
-                results[j as usize].lookup_result = LookupResult::Ignore;
+            if results[i as usize].zone.meta_id
+                == results[j as usize].zone.meta_id
+            {
+                let tmp_result = results[j as usize].result;
+                results[j as usize].result = PointLookupResult::Ignore;
                 /* This is the same result. Is it an exclusion zone? */
-                if tmp_result == LookupResult::InZone {
+                if tmp_result == PointLookupResult::InZone {
                     inside_sum += 1
-                } else if tmp_result == LookupResult::InExcludedZone {
+                } else if tmp_result == PointLookupResult::InExcludedZone {
                     inside_sum -= 1
                 } else {
                     /* If on the bodrder then the final result is on the border */
@@ -692,24 +714,24 @@ pub fn lookup(
                 }
             }
         }
-        if override_result != LookupResult::Ignore {
-            results[i as usize].lookup_result = override_result
+        if override_result != PointLookupResult::Ignore {
+            results[i as usize].result = override_result
         } else if inside_sum != 0 {
-            results[i as usize].lookup_result = LookupResult::InZone
+            results[i as usize].result = PointLookupResult::InZone
         }
     }
     /* Remove zones to ignore */
-    results.retain(|r| r.lookup_result != LookupResult::Ignore);
+    results.retain(|r| r.result != PointLookupResult::Ignore);
     /* Lookup metadata */
     for result in &mut results {
         let mut tmp_index: u32 =
-            library.metadata_offset.wrapping_add(result.meta_id);
+            library.metadata_offset.wrapping_add(result.zone.meta_id);
 
         for j in 0..library.field_names.len() {
             let key = library.field_names[j].clone();
             let value = crate::parse_string(&*library, &mut tmp_index)
                 .expect("failed to get field data");
-            result.fields.insert(key, value);
+            result.zone.fields.insert(key, value);
         }
     }
 
