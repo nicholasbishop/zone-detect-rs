@@ -135,7 +135,7 @@ pub fn ZDDecodeVariableLengthUnsigned(
     *index = (*index as libc::c_uint).wrapping_add(i) as u32 as u32;
     i
 }
-unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
+unsafe fn ZDDecodeVariableLengthUnsignedReverse(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut u64,
@@ -171,7 +171,7 @@ fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
         value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64
     }
 }
-unsafe extern "C" fn ZDDecodeVariableLengthSigned(
+unsafe fn ZDDecodeVariableLengthSigned(
     library: &ZoneDetect,
     index: &mut u32,
     mut result: *mut i32,
@@ -182,7 +182,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthSigned(
     *result = ZDDecodeUnsignedToSigned(value) as i32;
     retVal
 }
-pub unsafe extern "C" fn ZDParseString(
+pub unsafe fn ZDParseString(
     library: &ZoneDetect,
     index: &mut u32,
 ) -> Option<Vec<u8>> {
@@ -255,7 +255,7 @@ fn ZDUnshuffle(mut w: u64) -> u32 {
         & 0xffff_ffff as libc::c_uint as libc::c_ulong;
     w as u32
 }
-unsafe extern "C" fn ZDDecodePoint(
+unsafe fn ZDDecodePoint(
     mut point: u64,
     mut lat: *mut i32,
     mut lon: *mut i32,
@@ -266,7 +266,7 @@ unsafe extern "C" fn ZDDecodePoint(
             as i32;
 }
 
-unsafe extern "C" fn ZDReaderGetPoint(
+unsafe fn ZDReaderGetPoint(
     mut reader: *mut Reader,
     mut pointLat: *mut i32,
     mut pointLon: *mut i32,
@@ -445,7 +445,7 @@ unsafe extern "C" fn ZDReaderGetPoint(
     }
     1 as libc::c_int
 }
-unsafe extern "C" fn ZDFindPolygon(
+unsafe fn ZDFindPolygon(
     library: &ZoneDetect,
     mut wantedId: u32,
     mut metadataIndexPtr: *mut u32,
@@ -580,7 +580,7 @@ pub unsafe fn ZDPolygonToList(
     }
     None
 }
-unsafe extern "C" fn ZDPointInPolygon(
+unsafe fn ZDPointInPolygon(
     mut library: &ZoneDetect,
     mut polygonIndex: u32,
     mut latFixedPoint: i32,
@@ -773,7 +773,7 @@ unsafe extern "C" fn ZDPointInPolygon(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn ZDLookup(
+pub unsafe fn ZDLookup(
     mut library: &ZoneDetect,
     location: crate::Location,
     mut safezone: Option<&mut f32>,
