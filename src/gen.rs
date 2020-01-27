@@ -91,7 +91,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-unsafe extern "C" fn ZDFloatToFixedPoint(
+fn ZDFloatToFixedPoint(
     mut input: libc::c_float,
     mut scale: libc::c_float,
     mut precision: libc::c_uint,
@@ -102,7 +102,8 @@ unsafe extern "C" fn ZDFloatToFixedPoint(
             << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
             as libc::c_float) as i32
 }
-unsafe extern "C" fn ZDFixedPointToFloat(
+
+fn ZDFixedPointToFloat(
     mut input: i32,
     mut scale: libc::c_float,
     mut precision: libc::c_uint,
@@ -177,7 +178,7 @@ unsafe extern "C" fn ZDDecodeVariableLengthUnsignedReverse(
     let mut i2: u32 = i;
     ZDDecodeVariableLengthUnsigned(library, &mut i2, result)
 }
-unsafe extern "C" fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
+fn ZDDecodeUnsignedToSigned(mut value: u64) -> i64 {
     if value & 1 as libc::c_int as libc::c_ulong != 0 {
         -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64)
     } else {
@@ -246,7 +247,7 @@ pub unsafe extern "C" fn ZDParseString(
     str
 }
 
-unsafe extern "C" fn ZDPointInBox(
+fn ZDPointInBox(
     mut xl: i32,
     mut x: i32,
     mut xr: i32,
@@ -258,7 +259,7 @@ unsafe extern "C" fn ZDPointInBox(
         && (yl <= y && y <= yr || yr <= y && y <= yl)
 }
 
-unsafe extern "C" fn ZDUnshuffle(mut w: u64) -> u32 {
+fn ZDUnshuffle(mut w: u64) -> u32 {
     w &= 0x5555_5555_5555_5555 as libc::c_long as libc::c_ulong;
     w = (w | w >> 1 as libc::c_int)
         & 0x3333_3333_3333_3333 as libc::c_long as libc::c_ulong;
