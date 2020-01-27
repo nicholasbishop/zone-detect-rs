@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tzlookup::{Database, Location, ZoneDetectResult};
+use tzlookup::{Database, Location, LookupResult, ZoneDetectResult};
 
 fn random_location(rng: &mut StdRng) -> Location {
     Location {
@@ -20,11 +20,28 @@ fn get_demo_path() -> PathBuf {
     path.into()
 }
 
-fn lookup(db: &Database, location: Location) -> (String, Vec<ZoneDetectResult>) {
+fn lookup_result_to_string(result: LookupResult) -> &'static str {
+    match result {
+        LookupResult::Ignore => "Ignore",
+        LookupResult::End => "End",
+        LookupResult::ParseError => "Parsing error",
+        LookupResult::NotInZone => "Not in zone",
+        LookupResult::InZone => "In zone",
+        LookupResult::InExcludedZone => "In excluded zone",
+        LookupResult::OnBorderVertex => "Target point is border vertex",
+        LookupResult::OnBorderSegment => "Target point is on border",
+    }
+}
+
+fn lookup(
+    db: &Database,
+    location: Location,
+) -> (String, Vec<ZoneDetectResult>) {
     let mut output = String::new();
     let (results, safezone) = db.lookup(location);
     for result in &results {
-        output += "In zone:\n";
+        output +=
+            &format!("{}:\n", lookup_result_to_string(result.lookupResult));
         output += &format!("  meta: {}\n", result.metaId);
         output += &format!("  polygon: {}\n", result.polygonId);
         output += &format!(
@@ -62,7 +79,7 @@ fn test_compare() {
 
     let mut rng = StdRng::from_seed([0; 32]);
 
-    let num_iterations = 1000;
+    let num_iterations = 10000;
     for i in 0..num_iterations {
         let loc = random_location(&mut rng);
         let output = Command::new(&path)
