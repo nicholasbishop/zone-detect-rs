@@ -781,14 +781,10 @@ unsafe extern "C" fn ZDPointInPolygon(
     }
     if winding == -(4 as libc::c_int) {
         return LookupResult::InZone;
-    } else {
-        if winding == 4 as libc::c_int {
-            return LookupResult::InExcludedZone;
-        } else {
-            if winding == 0 as libc::c_int {
-                return LookupResult::NotInZone;
-            }
-        }
+    } else if winding == 4 as libc::c_int {
+        return LookupResult::InExcludedZone;
+    } else if winding == 0 as libc::c_int {
+        return LookupResult::NotInZone;
     }
     /* Should not happen */
     if !distanceSqrMin.is_null() {
