@@ -63,7 +63,7 @@ pub fn parse_string(
     db: &gen::ZoneDetect,
     index: &mut u32,
 ) -> std::result::Result<String, StringParseError> {
-    if let Some(bytes) = gen::ZDParseString(db, index) {
+    if let Some(bytes) = gen::parse_string(db, index) {
         let string = String::from_utf8(bytes)?;
         Ok(string)
     } else {
@@ -167,17 +167,17 @@ impl Database {
 
         // Read section sizes. Note that bboxOffset is already initialized to zero.
         let mut tmp: u64 = 0;
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
+        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidMetadataOffset);
         }
         db.metadataOffset = tmp as u32 + db.bboxOffset;
 
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
+        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidDataOffset);
         }
         db.dataOffset = tmp as u32 + db.metadataOffset;
 
-        if gen::ZDDecodeVariableLengthUnsigned(db, &mut index, &mut tmp) == 0 {
+        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidPaddingOffset);
         }
 
@@ -196,7 +196,7 @@ impl Database {
     }
 
     pub fn simple_lookup(&self, location: Location) -> Option<String> {
-        let results = gen::ZDLookup(&self.library, location, None);
+        let results = gen::lookup(&self.library, location, None);
 
         if let Some(result) = results.first() {
             match self.library.tableType {
@@ -219,8 +219,7 @@ impl Database {
 
     pub fn lookup(&self, location: Location) -> (Vec<ZoneDetectResult>, f32) {
         let mut safezone: f32 = 0.0;
-        let results =
-            gen::ZDLookup(&self.library, location, Some(&mut safezone));
+        let results = gen::lookup(&self.library, location, Some(&mut safezone));
         (results, safezone)
     }
 }
