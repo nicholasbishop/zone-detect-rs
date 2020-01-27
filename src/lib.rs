@@ -63,7 +63,7 @@ pub fn parse_string(
     db: &gen::ZoneDetect,
     index: &mut u32,
 ) -> std::result::Result<String, StringParseError> {
-    if let Some(bytes) = unsafe { gen::ZDParseString(db, index) } {
+    if let Some(bytes) = gen::ZDParseString(db, index) {
         let string = String::from_utf8(bytes)?;
         Ok(string)
     } else {

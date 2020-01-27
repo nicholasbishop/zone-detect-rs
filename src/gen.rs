@@ -181,10 +181,7 @@ fn ZDDecodeVariableLengthSigned(
     *result = ZDDecodeUnsignedToSigned(value) as i32;
     retVal
 }
-pub unsafe fn ZDParseString(
-    library: &ZoneDetect,
-    index: &mut u32,
-) -> Option<Vec<u8>> {
+pub fn ZDParseString(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
     let mut strLength: u64 = 0;
     if ZDDecodeVariableLengthUnsigned(library, index, &mut strLength) == 0 {
         return None;
@@ -210,12 +207,11 @@ pub unsafe fn ZDParseString(
         }
     }
     let mut str = Vec::with_capacity(strLength as usize);
-    let mapping: *const u8 = library.mapping.as_ptr();
     let mut i: size_t = 0 as libc::c_int as size_t;
     while i < strLength {
         str.push(
-            (*mapping
-                .offset((strOffset as libc::c_ulong).wrapping_add(i) as isize)
+            (library.mapping
+                [(strOffset as libc::c_ulong).wrapping_add(i) as usize]
                 as libc::c_int
                 ^ 0x80 as libc::c_int) as u8,
         );
