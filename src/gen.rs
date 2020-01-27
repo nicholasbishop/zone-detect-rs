@@ -757,21 +757,17 @@ pub fn lookup(
     /* Remove zones to ignore */
     results.retain(|r| r.lookupResult != LookupResult::Ignore);
     /* Lookup metadata */
-    let mut i_1: size_t = 0 as libc::c_int as size_t;
-    while i_1 < results.len() as u64 {
+    for i in 0..results.len() {
         let mut tmpIndex: u32 = library
             .metadataOffset
-            .wrapping_add(results[i_1 as usize].metaId);
+            .wrapping_add(results[i].metaId);
 
-        let mut j_0: size_t = 0 as libc::c_int as size_t;
-        while j_0 < library.fieldNames.len() as libc::c_ulong {
-            let key = library.fieldNames[j_0 as usize].clone();
+        for j in 0..library.fieldNames.len() {
+            let key = library.fieldNames[j].clone();
             let value = crate::parse_string(&*library, &mut tmpIndex)
                 .expect("failed to get field data");
-            results[i_1 as usize].fields.insert(key, value);
-            j_0 = j_0.wrapping_add(1)
+            results[i].fields.insert(key, value);
         }
-        i_1 = i_1.wrapping_add(1)
     }
 
     if let Some(safezone) = safezone {
