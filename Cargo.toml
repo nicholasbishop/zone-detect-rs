@@ -8,8 +8,6 @@ repository = "https://github.com/nicholasbishop/zone-detect-rs"
 description = "Rust version of the ZoneDetect C library."
 
 [dependencies]
-# TODO: should be able to remove this now
-libc = "0.2"
 thiserror = "1.0"
 
 [dev-dependencies]

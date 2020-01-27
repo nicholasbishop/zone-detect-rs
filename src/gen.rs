@@ -68,63 +68,57 @@ impl<'a> Reader<'a> {
     }
 }
 
-fn float_to_fixed_point(
-    input: f32,
-    scale: f32,
-    precision: libc::c_uint,
-) -> i32 {
+fn float_to_fixed_point(input: f32, scale: f32, precision: u32) -> i32 {
     let input_scaled: f32 = input / scale;
     (input_scaled
-        * ((1 as libc::c_int)
-            << precision.wrapping_sub(1 as libc::c_int as libc::c_uint))
-            as f32) as i32
+        * ((1 as i32) << precision.wrapping_sub(1 as i32 as u32)) as f32)
+        as i32
 }
 
 pub fn decode_variable_length_unsigned(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut u64,
-) -> libc::c_uint {
+) -> u32 {
     if *index >= library.mapping.len() as u32 {
-        return 0 as libc::c_int as libc::c_uint;
+        return 0 as i32 as u32;
     }
-    let mut value: u64 = 0 as libc::c_int as u64;
-    let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut value: u64 = 0 as i32 as u64;
+    let mut i: u32 = 0 as i32 as u32;
     let buffer = &library.mapping[*index as usize..];
-    let mut shift: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut shift: u32 = 0 as i32 as u32;
     for byte in buffer {
-        value |= (*byte as u64 & 0x7f as libc::c_int as libc::c_ulong) << shift;
-        shift = shift.wrapping_add(7 as libc::c_uint);
-        if *byte as libc::c_int & 0x80 as libc::c_int == 0 {
+        value |= (*byte as u64 & 0x7f as i32 as u64) << shift;
+        shift = shift.wrapping_add(7 as u32);
+        if *byte as i32 & 0x80 as i32 == 0 {
             break;
         }
         i = i.wrapping_add(1);
     }
     i = i.wrapping_add(1);
     *result = value;
-    *index = (*index as libc::c_uint).wrapping_add(i) as u32 as u32;
+    *index = (*index as u32).wrapping_add(i) as u32 as u32;
     i
 }
 fn decode_variable_length_unsigned_reverse(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut u64,
-) -> libc::c_uint {
+) -> u32 {
     let mut i: u32 = *index;
     if *index >= library.mapping.len() as u32 {
-        return 0 as libc::c_int as libc::c_uint;
+        return 0 as i32 as u32;
     }
-    if library.mapping[i as usize] as libc::c_int & 0x80 as libc::c_int != 0 {
-        return 0 as libc::c_int as libc::c_uint;
+    if library.mapping[i as usize] as i32 & 0x80 as i32 != 0 {
+        return 0 as i32 as u32;
     }
     if i == 0 {
-        return 0 as libc::c_int as libc::c_uint;
+        return 0 as i32 as u32;
     }
     i = i.wrapping_sub(1);
-    while library.mapping[i as usize] as libc::c_int & 0x80 as libc::c_int != 0
-    {
+    while library.mapping[i as usize] as i32 & 0x80 as i32 != 0 {
         if i == 0 {
-            return 0 as libc::c_int as libc::c_uint;
+            return 0 as i32 as u32;
         }
         i = i.wrapping_sub(1)
     }
@@ -134,19 +128,19 @@ fn decode_variable_length_unsigned_reverse(
     decode_variable_length_unsigned(library, &mut i2, result)
 }
 fn decode_unsigned_to_signed(value: u64) -> i64 {
-    if value & 1 as libc::c_int as libc::c_ulong != 0 {
-        -(value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64)
+    if value & 1 as i32 as u64 != 0 {
+        -(value.wrapping_div(2 as i32 as u64) as i64)
     } else {
-        value.wrapping_div(2 as libc::c_int as libc::c_ulong) as i64
+        value.wrapping_div(2 as i32 as u64) as i64
     }
 }
 fn decode_variable_length_signed(
     library: &ZoneDetect,
     index: &mut u32,
     result: &mut i32,
-) -> libc::c_uint {
-    let mut value: u64 = 0 as libc::c_int as u64;
-    let retval: libc::c_uint =
+) -> u32 {
+    let mut value: u64 = 0 as i32 as u64;
+    let retval: u32 =
         decode_variable_length_unsigned(library, index, &mut value);
     *result = decode_unsigned_to_signed(value) as i32;
     retval
@@ -157,13 +151,13 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
         return None;
     }
     let mut str_offset: u32 = *index;
-    let mut remote_str: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    if str_length >= 256 as libc::c_int as libc::c_ulong {
+    let mut remote_str: u32 = 0 as i32 as u32;
+    if str_length >= 256 as i32 as u64 {
         str_offset = library
             .metadata_offset
             .wrapping_add(str_length as u32)
-            .wrapping_sub(256 as libc::c_int as libc::c_uint);
-        remote_str = 1 as libc::c_int as libc::c_uint;
+            .wrapping_sub(256 as i32 as u32);
+        remote_str = 1 as i32 as u32;
         if decode_variable_length_unsigned(
             library,
             &mut str_offset,
@@ -172,20 +166,19 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
         {
             return None;
         }
-        if str_length > 256 as libc::c_int as libc::c_ulong {
+        if str_length > 256 as i32 as u64 {
             return None;
         }
     }
     let mut str = Vec::with_capacity(str_length as usize);
     for i in 0..str_length as usize {
         str.push(
-            (library.mapping[str_offset as usize + i] as libc::c_int
-                ^ 0x80 as libc::c_int) as u8,
+            (library.mapping[str_offset as usize + i] as i32 ^ 0x80 as i32)
+                as u8,
         );
     }
     if remote_str == 0 {
-        *index = (*index as libc::c_uint).wrapping_add(str_length as u32) as u32
-            as u32
+        *index = (*index as u32).wrapping_add(str_length as u32) as u32 as u32
     }
     Some(str)
 }
@@ -196,39 +189,34 @@ fn point_in_box(xl: i32, x: i32, xr: i32, yl: i32, y: i32, yr: i32) -> bool {
 }
 
 fn unshuffle(mut w: u64) -> u32 {
-    w &= 0x5555_5555_5555_5555 as libc::c_long as libc::c_ulong;
-    w = (w | w >> 1 as libc::c_int)
-        & 0x3333_3333_3333_3333 as libc::c_long as libc::c_ulong;
-    w = (w | w >> 2 as libc::c_int)
-        & 0x0f0f_0f0f_0f0f_0f0f as libc::c_long as libc::c_ulong;
-    w = (w | w >> 4 as libc::c_int)
-        & 0xff_00ff_00ff_00ff as libc::c_long as libc::c_ulong;
-    w = (w | w >> 8 as libc::c_int)
-        & 0xffff_0000_ffff as libc::c_long as libc::c_ulong;
-    w = (w | w >> 16 as libc::c_int)
-        & 0xffff_ffff as libc::c_uint as libc::c_ulong;
+    w &= 0x5555_5555_5555_5555 as i64 as u64;
+    w = (w | w >> 1 as i32) & 0x3333_3333_3333_3333 as i64 as u64;
+    w = (w | w >> 2 as i32) & 0x0f0f_0f0f_0f0f_0f0f as i64 as u64;
+    w = (w | w >> 4 as i32) & 0xff_00ff_00ff_00ff as i64 as u64;
+    w = (w | w >> 8 as i32) & 0xffff_0000_ffff as i64 as u64;
+    w = (w | w >> 16 as i32) & 0xffff_ffff as u32 as u64;
     w as u32
 }
 fn decode_point(point: u64, lat: &mut i32, lon: &mut i32) {
     *lat = decode_unsigned_to_signed(unshuffle(point) as u64) as i32;
-    *lon = decode_unsigned_to_signed(unshuffle(point >> 1 as libc::c_int) as u64)
-        as i32;
+    *lon =
+        decode_unsigned_to_signed(unshuffle(point >> 1 as i32) as u64) as i32;
 }
 
 fn reader_get_point(
     reader: &mut Reader,
     point_lat: &mut i32,
     point_lon: &mut i32,
-) -> libc::c_int {
+) -> i32 {
     let mut reference_done;
-    let mut diff_lat: i32 = 0 as libc::c_int;
-    let mut diff_lon: i32 = 0 as libc::c_int;
+    let mut diff_lat: i32 = 0 as i32;
+    let mut diff_lon: i32 = 0 as i32;
     loop {
-        if reader.done as libc::c_int > 1 as libc::c_int {
-            return 0 as libc::c_int;
+        if reader.done as i32 > 1 as i32 {
+            return 0 as i32;
         }
-        if reader.first as libc::c_int != 0
-            && (*reader.library).version as libc::c_int == 0 as libc::c_int
+        if reader.first as i32 != 0
+            && (*reader.library).version as i32 == 0 as i32
         {
             if decode_variable_length_unsigned(
                 reader.library,
@@ -236,15 +224,15 @@ fn reader_get_point(
                 &mut reader.num_vertices,
             ) == 0
             {
-                return -(1 as libc::c_int);
+                return -(1 as i32);
             }
             if reader.num_vertices == 0 {
-                return -(1 as libc::c_int);
+                return -(1 as i32);
             }
         }
-        reference_done = 0 as libc::c_int as u8;
-        if (*reader.library).version as libc::c_int == 1 as libc::c_int {
-            let mut point: u64 = 0 as libc::c_int as u64;
+        reference_done = 0 as i32 as u8;
+        if (*reader.library).version as i32 == 1 as i32 {
+            let mut point: u64 = 0 as i32 as u64;
             if reader.reference_direction == 0 {
                 if decode_variable_length_unsigned(
                     reader.library,
@@ -252,9 +240,9 @@ fn reader_get_point(
                     &mut point,
                 ) == 0
                 {
-                    return -(1 as libc::c_int);
+                    return -(1 as i32);
                 }
-            } else if reader.reference_direction > 0 as libc::c_int {
+            } else if reader.reference_direction > 0 as i32 {
                 /* Read reference forward */
                 if decode_variable_length_unsigned(
                     reader.library,
@@ -262,12 +250,12 @@ fn reader_get_point(
                     &mut point,
                 ) == 0
                 {
-                    return -(1 as libc::c_int);
+                    return -(1 as i32);
                 }
                 if reader.reference_start >= reader.reference_end {
-                    reference_done = 1 as libc::c_int as u8
+                    reference_done = 1 as i32 as u8
                 }
-            } else if reader.reference_direction < 0 as libc::c_int {
+            } else if reader.reference_direction < 0 as i32 {
                 /* Read reference backwards */
                 if decode_variable_length_unsigned_reverse(
                     reader.library,
@@ -275,16 +263,16 @@ fn reader_get_point(
                     &mut point,
                 ) == 0
                 {
-                    return -(1 as libc::c_int);
+                    return -(1 as i32);
                 }
                 if reader.reference_start <= reader.reference_end {
-                    reference_done = 1 as libc::c_int as u8
+                    reference_done = 1 as i32 as u8
                 }
             }
             if point == 0 {
                 /* This is a special marker, it is not allowed in reference mode */
                 if reader.reference_direction != 0 {
-                    return -(1 as libc::c_int);
+                    return -(1 as i32);
                 }
                 let mut value: u64 = 0;
                 if decode_variable_length_unsigned(
@@ -293,11 +281,11 @@ fn reader_get_point(
                     &mut value,
                 ) == 0
                 {
-                    return -(1 as libc::c_int);
+                    return -(1 as i32);
                 }
-                if value == 0 as libc::c_int as libc::c_ulong {
-                    reader.done = 2 as libc::c_int as u8
-                } else if value == 1 as libc::c_int as libc::c_ulong {
+                if value == 0 as i32 as u64 {
+                    reader.done = 2 as i32 as u8
+                } else if value == 1 as i32 as u64 {
                     let mut diff: i32 = 0;
                     let mut start: u64 = 0;
                     if decode_variable_length_unsigned(
@@ -306,7 +294,7 @@ fn reader_get_point(
                         &mut start,
                     ) == 0
                     {
-                        return -(1 as libc::c_int);
+                        return -(1 as i32);
                     }
                     if decode_variable_length_signed(
                         reader.library,
@@ -314,17 +302,16 @@ fn reader_get_point(
                         &mut diff,
                     ) == 0
                     {
-                        return -(1 as libc::c_int);
+                        return -(1 as i32);
                     }
                     reader.reference_start = (*reader.library)
                         .data_offset
                         .wrapping_add(start as u32);
-                    reader.reference_end =
-                        (*reader.library).data_offset.wrapping_add(
-                            (start as i64 + diff as libc::c_long) as u32,
-                        );
+                    reader.reference_end = (*reader.library)
+                        .data_offset
+                        .wrapping_add((start as i64 + diff as i64) as u32);
                     reader.reference_direction = diff;
-                    if diff < 0 as libc::c_int {
+                    if diff < 0 as i32 {
                         reader.reference_start =
                             reader.reference_start.wrapping_sub(1);
                         reader.reference_end =
@@ -334,20 +321,20 @@ fn reader_get_point(
                 }
             } else {
                 decode_point(point, &mut diff_lat, &mut diff_lon);
-                if reader.reference_direction < 0 as libc::c_int {
+                if reader.reference_direction < 0 as i32 {
                     diff_lat = -diff_lat;
                     diff_lon = -diff_lon
                 }
             }
         }
-        if (*reader.library).version as libc::c_int == 0 as libc::c_int {
+        if (*reader.library).version as i32 == 0 as i32 {
             if decode_variable_length_signed(
                 reader.library,
                 &mut reader.polygon_index,
                 &mut diff_lat,
             ) == 0
             {
-                return -(1 as libc::c_int);
+                return -(1 as i32);
             }
             if decode_variable_length_signed(
                 reader.library,
@@ -355,7 +342,7 @@ fn reader_get_point(
                 &mut diff_lon,
             ) == 0
             {
-                return -(1 as libc::c_int);
+                return -(1 as i32);
             }
         }
         if reader.done == 0 {
@@ -369,26 +356,26 @@ fn reader_get_point(
             /* Close the polygon (the closing point is not encoded) */
             reader.point_lat = reader.first_lat;
             reader.point_lon = reader.first_lon;
-            reader.done = 2 as libc::c_int as u8
+            reader.done = 2 as i32 as u8
         }
-        reader.first = 0 as libc::c_int as u8;
+        reader.first = 0 as i32 as u8;
         if reader.library.version != 0 {
             break;
         }
         reader.num_vertices = reader.num_vertices.wrapping_sub(1);
         if reader.num_vertices == 0 {
-            reader.done = 1 as libc::c_int as u8
+            reader.done = 1 as i32 as u8
         }
         if !(diff_lat == 0 && diff_lon == 0) {
             break;
         }
     }
     if reference_done != 0 {
-        reader.reference_direction = 0 as libc::c_int
+        reader.reference_direction = 0 as i32
     }
     *point_lat = reader.point_lat;
     *point_lon = reader.point_lon;
-    1 as libc::c_int
+    1 as i32
 }
 
 fn point_in_polygon(
@@ -404,63 +391,60 @@ fn point_in_polygon(
 ) -> LookupResult {
     let mut point_lat: i32 = 0;
     let mut point_lon: i32 = 0;
-    let mut prev_lat: i32 = 0 as libc::c_int;
-    let mut prev_lon: i32 = 0 as libc::c_int;
-    let mut prev_quadrant: libc::c_int = 0 as libc::c_int;
-    let mut winding: libc::c_int = 0 as libc::c_int;
-    let mut first: u8 = 1 as libc::c_int as u8;
+    let mut prev_lat: i32 = 0 as i32;
+    let mut prev_lon: i32 = 0 as i32;
+    let mut prev_quadrant: i32 = 0 as i32;
+    let mut winding: i32 = 0 as i32;
+    let mut first: u8 = 1 as i32 as u8;
     let mut reader = Reader::new(library, polygon_index);
     loop {
-        let result: libc::c_int =
+        let result: i32 =
             reader_get_point(&mut reader, &mut point_lat, &mut point_lon);
-        if result < 0 as libc::c_int {
+        if result < 0 as i32 {
             return LookupResult::ParseError;
         } else {
-            if result == 0 as libc::c_int {
+            if result == 0 as i32 {
                 break;
             }
             /* Check if point is ON the border */
             if point_lat == lat_fixed_point && point_lon == lon_fixed_point {
                 if calc_distance_sqr_min {
-                    *distance_sqr_min = 0 as libc::c_int as u64
+                    *distance_sqr_min = 0 as i32 as u64
                 }
                 return LookupResult::OnBorderVertex;
             }
             /* Find quadrant */
-            let quadrant: libc::c_int;
+            let quadrant: i32;
             if point_lat >= lat_fixed_point {
                 if point_lon >= lon_fixed_point {
-                    quadrant = 0 as libc::c_int
+                    quadrant = 0 as i32
                 } else {
-                    quadrant = 1 as libc::c_int
+                    quadrant = 1 as i32
                 }
             } else if point_lon >= lon_fixed_point {
-                quadrant = 3 as libc::c_int
+                quadrant = 3 as i32
             } else {
-                quadrant = 2 as libc::c_int
+                quadrant = 2 as i32
             }
             if first == 0 {
-                let mut winding_need_compare: libc::c_int = 0 as libc::c_int;
-                let mut line_is_straight: libc::c_int = 0 as libc::c_int;
-                let mut a: f32 = 0 as libc::c_int as f32;
-                let mut b: f32 = 0 as libc::c_int as f32;
+                let mut winding_need_compare: i32 = 0 as i32;
+                let mut line_is_straight: i32 = 0 as i32;
+                let mut a: f32 = 0 as i32 as f32;
+                let mut b: f32 = 0 as i32 as f32;
                 /* Calculate winding number */
                 if quadrant != prev_quadrant {
-                    if quadrant
-                        == (prev_quadrant + 1 as libc::c_int) % 4 as libc::c_int
-                    {
+                    if quadrant == (prev_quadrant + 1 as i32) % 4 as i32 {
                         winding += 1
-                    } else if (quadrant + 1 as libc::c_int) % 4 as libc::c_int
-                        == prev_quadrant
+                    } else if (quadrant + 1 as i32) % 4 as i32 == prev_quadrant
                     {
                         winding -= 1
                     } else {
-                        winding_need_compare = 1 as libc::c_int
+                        winding_need_compare = 1 as i32
                     }
                 }
                 /* Avoid horizontal and vertical lines */
                 if point_lon == prev_lon || point_lat == prev_lat {
-                    line_is_straight = 1 as libc::c_int
+                    line_is_straight = 1 as i32
                 }
                 /* Calculate the parameters of y=ax+b if needed */
                 if line_is_straight == 0
@@ -482,7 +466,7 @@ fn point_in_polygon(
                     && (on_straight || winding_need_compare != 0)
                 {
                     if calc_distance_sqr_min {
-                        *distance_sqr_min = 0 as libc::c_int as u64
+                        *distance_sqr_min = 0 as i32 as u64
                     }
                     return LookupResult::OnBorderSegment;
                 }
@@ -491,23 +475,21 @@ fn point_in_polygon(
                     /* Check if the target is on the border */
                     let intersect_lon: i32 =
                         ((lat_fixed_point as f32 - b) / a) as i32;
-                    if intersect_lon >= lon_fixed_point - 1 as libc::c_int
-                        && intersect_lon <= lon_fixed_point + 1 as libc::c_int
+                    if intersect_lon >= lon_fixed_point - 1 as i32
+                        && intersect_lon <= lon_fixed_point + 1 as i32
                     {
                         if calc_distance_sqr_min {
-                            *distance_sqr_min = 0 as libc::c_int as u64
+                            *distance_sqr_min = 0 as i32 as u64
                         }
                         return LookupResult::OnBorderSegment;
                     }
                     /* Ok, it's not. In which direction did we go round the target? */
-                    let sign: libc::c_int = if intersect_lon < lon_fixed_point {
-                        2 as libc::c_int
+                    let sign: i32 = if intersect_lon < lon_fixed_point {
+                        2 as i32
                     } else {
-                        -(2 as libc::c_int)
+                        -(2 as i32)
                     };
-                    if quadrant == 2 as libc::c_int
-                        || quadrant == 3 as libc::c_int
-                    {
+                    if quadrant == 2 as i32 || quadrant == 3 as i32 {
                         winding += sign
                     } else {
                         winding -= sign
@@ -521,12 +503,12 @@ fn point_in_polygon(
                         closest_lon = (lon_fixed_point as f32
                             + a * lat_fixed_point as f32
                             - a * b)
-                            / (a * a + 1 as libc::c_int as f32);
+                            / (a * a + 1 as i32 as f32);
                         closest_lat = (a
                             * (lon_fixed_point as f32
                                 + a * lat_fixed_point as f32)
                             + b)
-                            / (a * a + 1 as libc::c_int as f32)
+                            / (a * a + 1 as i32 as f32)
                     } else if point_lon == prev_lon {
                         closest_lon = point_lon as f32;
                         closest_lat = lat_fixed_point as f32
@@ -560,9 +542,8 @@ fn point_in_polygon(
                     /* Note: lon has half scale */
                     let distance_sqr: u64 = ((diff_lat * diff_lat) as u64)
                         .wrapping_add(
-                            ((diff_lon * diff_lon) as u64).wrapping_mul(
-                                4 as libc::c_int as libc::c_ulong,
-                            ),
+                            ((diff_lon * diff_lon) as u64)
+                                .wrapping_mul(4 as i32 as u64),
                         );
                     if distance_sqr < *distance_sqr_min {
                         *distance_sqr_min = distance_sqr
@@ -572,19 +553,19 @@ fn point_in_polygon(
             prev_quadrant = quadrant;
             prev_lat = point_lat;
             prev_lon = point_lon;
-            first = 0 as libc::c_int as u8
+            first = 0 as i32 as u8
         }
     }
-    if winding == -(4 as libc::c_int) {
+    if winding == -(4 as i32) {
         return LookupResult::InZone;
-    } else if winding == 4 as libc::c_int {
+    } else if winding == 4 as i32 {
         return LookupResult::InExcludedZone;
-    } else if winding == 0 as libc::c_int {
+    } else if winding == 0 as i32 {
         return LookupResult::NotInZone;
     }
     /* Should not happen */
     if calc_distance_sqr_min {
-        *distance_sqr_min = 0 as libc::c_int as u64
+        *distance_sqr_min = 0 as i32 as u64
     }
     LookupResult::OnBorderSegment
 }
@@ -596,22 +577,22 @@ pub fn lookup(
 ) -> Vec<ZoneDetectResult> {
     let lat_fixed_point: i32 = float_to_fixed_point(
         location.latitude,
-        90 as libc::c_int as f32,
-        library.precision as libc::c_uint,
+        90 as i32 as f32,
+        library.precision as u32,
     );
     let lon_fixed_point: i32 = float_to_fixed_point(
         location.longitude,
-        180 as libc::c_int as f32,
-        library.precision as libc::c_uint,
+        180 as i32 as f32,
+        library.precision as u32,
     );
-    let mut distance_sqr_min: u64 = -(1 as libc::c_int) as u64;
+    let mut distance_sqr_min: u64 = -(1 as i32) as u64;
     /* Parse the header */
     /* Iterate over all polygons */
     let mut bbox_index: u32 = library.bbox_offset;
-    let mut metadata_index: u32 = 0 as libc::c_int as u32;
-    let mut polygon_index: u32 = 0 as libc::c_int as u32;
+    let mut metadata_index: u32 = 0 as i32 as u32;
+    let mut polygon_index: u32 = 0 as i32 as u32;
     let mut results = Vec::new();
-    let mut polygon_id: u32 = 0 as libc::c_int as u32;
+    let mut polygon_id: u32 = 0 as i32 as u32;
     while bbox_index < library.metadata_offset {
         let mut min_lat: i32 = 0;
         let mut min_lon: i32 = 0;
@@ -655,10 +636,10 @@ pub fn lookup(
         {
             break;
         }
-        metadata_index = (metadata_index as libc::c_uint)
+        metadata_index = (metadata_index as u32)
             .wrapping_add(metadata_index_delta as u32)
             as u32 as u32;
-        polygon_index = (polygon_index as libc::c_uint)
+        polygon_index = (polygon_index as u32)
             .wrapping_add(polygon_index_delta as u32)
             as u32 as u32;
         if lat_fixed_point < min_lat {
@@ -694,7 +675,7 @@ pub fn lookup(
     }
     /* Clean up results */
     for i in 0..results.len() {
-        let mut inside_sum: libc::c_int = 0 as libc::c_int;
+        let mut inside_sum: i32 = 0 as i32;
         let mut override_result = LookupResult::Ignore;
         for j in i..results.len() {
             if results[i as usize].meta_id == results[j as usize].meta_id {
