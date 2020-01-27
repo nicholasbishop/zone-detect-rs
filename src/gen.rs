@@ -209,9 +209,7 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
     let mut str = Vec::with_capacity(strLength as usize);
     for i in 0..strLength as usize {
         str.push(
-            (library.mapping
-                [strOffset as usize + i]
-                as libc::c_int
+            (library.mapping[strOffset as usize + i] as libc::c_int
                 ^ 0x80 as libc::c_int) as u8,
         );
     }
@@ -222,14 +220,7 @@ pub fn parse_string(library: &ZoneDetect, index: &mut u32) -> Option<Vec<u8>> {
     Some(str)
 }
 
-fn point_in_box(
-    xl: i32,
-    x: i32,
-    xr: i32,
-    yl: i32,
-    y: i32,
-    yr: i32,
-) -> bool {
+fn point_in_box(xl: i32, x: i32, xr: i32, yl: i32, y: i32, yr: i32) -> bool {
     (xl <= x && x <= xr || xr <= x && x <= xl)
         && (yl <= y && y <= yr || yr <= y && y <= yl)
 }
@@ -756,16 +747,15 @@ pub fn lookup(
     /* Remove zones to ignore */
     results.retain(|r| r.lookupResult != LookupResult::Ignore);
     /* Lookup metadata */
-    for i in 0..results.len() {
-        let mut tmpIndex: u32 = library
-            .metadataOffset
-            .wrapping_add(results[i].metaId);
+    for result in &mut results {
+        let mut tmpIndex: u32 =
+            library.metadataOffset.wrapping_add(result.metaId);
 
         for j in 0..library.fieldNames.len() {
             let key = library.fieldNames[j].clone();
             let value = crate::parse_string(&*library, &mut tmpIndex)
                 .expect("failed to get field data");
-            results[i].fields.insert(key, value);
+            result.fields.insert(key, value);
         }
     }
 
