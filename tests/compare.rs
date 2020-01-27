@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tzlookup::{Database, Location, LookupResult, ZoneDetectResult};
+use tzlookup::{Database, Location, ZoneDetectResult, LookupResult};
 
 fn random_location(rng: &mut StdRng) -> Location {
     Location {
@@ -33,15 +33,11 @@ fn lookup_result_to_string(result: LookupResult) -> &'static str {
     }
 }
 
-fn lookup(
-    db: &Database,
-    location: Location,
-) -> (String, Vec<ZoneDetectResult>) {
+fn lookup(db: &Database, location: Location) -> (String, Vec<ZoneDetectResult>) {
     let mut output = String::new();
     let (results, safezone) = db.lookup(location);
     for result in &results {
-        output +=
-            &format!("{}:\n", lookup_result_to_string(result.lookupResult));
+        output += &format!("{}:\n", lookup_result_to_string(result.lookupResult));
         output += &format!("  meta: {}\n", result.metaId);
         output += &format!("  polygon: {}\n", result.polygonId);
         output += &format!(
@@ -71,7 +67,7 @@ fn lookup(
 
 /// This test compares the output against that of the demo program in
 /// ZoneDetect by feeding both many pairs of random coordinates.
-#[test]
+#[test] #[ignore]
 fn test_compare() {
     let path = get_demo_path();
     let db_path = "data/timezone21.bin";
