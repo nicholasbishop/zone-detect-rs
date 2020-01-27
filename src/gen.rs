@@ -262,7 +262,7 @@ fn ZDDecodePoint(point: u64, lat: &mut i32, lon: &mut i32) {
 }
 
 unsafe fn ZDReaderGetPoint(
-    mut reader: *mut Reader,
+    reader: &mut Reader,
     pointLat: &mut i32,
     pointLon: &mut i32,
 ) -> libc::c_int {
