@@ -717,7 +717,7 @@ pub unsafe fn ZDLookup(
                 if safezone.is_some() {
                     &mut distanceSqrMin
                 } else {
-                    0 as *mut u64
+                    std::ptr::null_mut()
                 },
             );
             if lookupResult == LookupResult::ParseError {
