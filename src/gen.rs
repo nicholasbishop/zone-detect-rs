@@ -1,4 +1,4 @@
-#![allow(unused_assignments, clippy::cognitive_complexity)]
+#![allow(clippy::cognitive_complexity)]
 #[derive(Clone, Debug)]
 pub struct ZoneDetectResult {
     pub lookup_result: LookupResult,
@@ -234,7 +234,7 @@ fn reader_get_point(
     point_lat: &mut i32,
     point_lon: &mut i32,
 ) -> libc::c_int {
-    let mut reference_done: u8 = 0;
+    let mut reference_done;
     let mut diff_lat: i32 = 0 as libc::c_int;
     let mut diff_lon: i32 = 0 as libc::c_int;
     loop {
@@ -441,7 +441,7 @@ fn point_in_polygon(
                 return LookupResult::OnBorderVertex;
             }
             /* Find quadrant */
-            let mut quadrant: libc::c_int = 0;
+            let quadrant: libc::c_int;
             if point_lat >= lat_fixed_point {
                 if point_lon >= lon_fixed_point {
                     quadrant = 0 as libc::c_int
@@ -529,8 +529,8 @@ fn point_in_polygon(
                 }
                 /* Calculate closest point on line (if needed) */
                 if calc_distance_sqr_min {
-                    let mut closest_lon: f32 = 0.;
-                    let mut closest_lat: f32 = 0.;
+                    let closest_lon: f32;
+                    let closest_lat: f32;
                     if line_is_straight == 0 {
                         closest_lon = (lon_fixed_point as f32
                             + a * lat_fixed_point as f32
@@ -556,8 +556,8 @@ fn point_in_polygon(
                         closest_lat as i32,
                         prev_lat,
                     );
-                    let mut diff_lat: i64 = 0;
-                    let mut diff_lon: i64 = 0;
+                    let diff_lat: i64;
+                    let diff_lon: i64;
                     if closest_in_box {
                         /* Calculate squared distance to segment. */
                         diff_lat =
