@@ -950,11 +950,8 @@ pub unsafe extern "C" fn ZDLookup(
     }
 
     if let Some(safezone) = safezone {
-        *safezone = (distanceSqrMin as f32).sqrt()
-            * 90 as libc::c_int as libc::c_float
-            / ((1 as libc::c_int)
-                << (*library).precision as libc::c_int - 1 as libc::c_int)
-                as libc::c_float
+        let den = (1 << ((*library).precision - 1)) as f32;
+        *safezone = (distanceSqrMin as f32).sqrt() * 90f32 / den;
     }
 
     results
