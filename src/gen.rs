@@ -418,7 +418,7 @@ unsafe fn ZDReaderGetPoint(
             (*reader).done = 2 as libc::c_int as u8
         }
         (*reader).first = 0 as libc::c_int as u8;
-        if !((*(*reader).library).version as libc::c_int == 0 as libc::c_int) {
+        if reader.library.version != 0 {
             break;
         }
         (*reader).numVertices = (*reader).numVertices.wrapping_sub(1);
