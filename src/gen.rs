@@ -873,7 +873,7 @@ pub unsafe extern "C" fn ZDLookup(
         polygonIndex = (polygonIndex as libc::c_uint)
             .wrapping_add(polygonIndexDelta as u32)
             as u32 as u32;
-        if !(latFixedPoint >= minLat) {
+        if latFixedPoint < minLat {
             break;
         }
         if latFixedPoint <= maxLat
