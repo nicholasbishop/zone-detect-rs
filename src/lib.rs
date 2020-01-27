@@ -60,7 +60,7 @@ pub enum StringParseError {
 }
 
 pub fn parse_string(
-    db: &gen::ZoneDetect,
+    db: &Database,
     index: &mut u32,
 ) -> std::result::Result<String, StringParseError> {
     if let Some(bytes) = gen::parse_string(db, index) {
@@ -72,7 +72,15 @@ pub fn parse_string(
 }
 
 pub struct Database {
-    library: gen::ZoneDetect,
+    pub bbox_offset: u32,
+    pub data_offset: u32,
+    pub field_names: Vec<String>,
+    pub mapping: Vec<u8>,
+    pub metadata_offset: u32,
+    pub notice: String,
+    pub precision: u8,
+    pub table_type: crate::TableType,
+    pub version: u8,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -98,31 +106,21 @@ impl Database {
 
     pub fn from_vec(mapping: Vec<u8>) -> Result<Database> {
         let mut db = Database {
-            library: gen::ZoneDetect {
-                mapping,
-                notice: String::new(),
-                table_type: TableType::Country,
-                version: 0,
-                precision: 0,
-                field_names: Vec::new(),
-                bbox_offset: 0,
-                metadata_offset: 0,
-                data_offset: 0,
-            },
+            mapping,
+            notice: String::new(),
+            table_type: TableType::Country,
+            version: 0,
+            precision: 0,
+            field_names: Vec::new(),
+            bbox_offset: 0,
+            metadata_offset: 0,
+            data_offset: 0,
         };
-        Self::parse_header(&mut db.library)?;
+        Self::parse_header(&mut db)?;
         Ok(db)
     }
 
-    pub fn table_type(&self) -> TableType {
-        self.library.table_type
-    }
-
-    pub fn notice(&self) -> &str {
-        &self.library.notice
-    }
-
-    fn parse_header(db: &mut gen::ZoneDetect) -> Result<()> {
+    fn parse_header(db: &mut Database) -> Result<()> {
         if db.mapping.len() < 7 {
             return Err(Error::TruncatedDatabase(db.mapping.len()));
         }
@@ -196,10 +194,10 @@ impl Database {
     }
 
     pub fn simple_lookup(&self, location: Location) -> Option<String> {
-        let results = gen::lookup(&self.library, location, None);
+        let results = gen::lookup(&self, location, None);
 
         if let Some(result) = results.first() {
-            match self.library.table_type {
+            match self.table_type {
                 TableType::Country => result.fields.get("Name"),
                 TableType::Timezone => {
                     if let Some(prefix) = result.fields.get("TimezoneIdPrefix")
@@ -219,7 +217,7 @@ impl Database {
 
     pub fn lookup(&self, location: Location) -> (Vec<ZoneDetectResult>, f32) {
         let mut safezone: f32 = 0.0;
-        let results = gen::lookup(&self.library, location, Some(&mut safezone));
+        let results = gen::lookup(&self, location, Some(&mut safezone));
         (results, safezone)
     }
 }
@@ -231,14 +229,14 @@ mod tests {
     #[test]
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
-        assert_eq!(db.library.bbox_offset, 288);
-        assert_eq!(db.library.metadata_offset, 33429);
-        assert_eq!(db.library.data_offset, 42557);
-        assert_eq!(db.library.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
-        assert_eq!(db.library.table_type, TableType::Timezone);
-        assert_eq!(db.library.precision, 21);
+        assert_eq!(db.bbox_offset, 288);
+        assert_eq!(db.metadata_offset, 33429);
+        assert_eq!(db.data_offset, 42557);
+        assert_eq!(db.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
+        assert_eq!(db.table_type, TableType::Timezone);
+        assert_eq!(db.precision, 21);
         assert_eq!(
-            db.library.field_names,
+            db.field_names,
             vec![
                 "TimezoneIdPrefix".to_string(),
                 "TimezoneId".to_string(),

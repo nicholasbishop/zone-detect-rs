@@ -7,20 +7,7 @@ pub struct ZoneDetectResult {
     // TODO: maybe change this to &str
     pub fields: std::collections::HashMap<String, String>,
 }
-#[derive(Clone)]
-pub struct ZoneDetectOpaque {
-    pub mapping: Vec<u8>,
-    pub table_type: crate::TableType,
-    pub version: u8,
-    pub precision: u8,
-    pub notice: String,
-    pub field_names: Vec<String>,
-    pub bbox_offset: u32,
-    pub metadata_offset: u32,
-    pub data_offset: u32,
-}
-pub type ZoneDetect = ZoneDetectOpaque;
-use crate::LookupResult;
+use crate::{Database as ZoneDetect, LookupResult};
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
  * All rights reserved.
