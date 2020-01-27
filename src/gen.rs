@@ -254,13 +254,10 @@ unsafe extern "C" fn ZDPointInBox(
     mut y: i32,
     mut yr: i32,
 ) -> bool {
-    if xl <= x && x <= xr || xr <= x && x <= xl {
-        if yl <= y && y <= yr || yr <= y && y <= yl {
-            return true;
-        }
-    }
-    false
+    (xl <= x && x <= xr || xr <= x && x <= xl)
+        && (yl <= y && y <= yr || yr <= y && y <= yl)
 }
+
 unsafe extern "C" fn ZDUnshuffle(mut w: u64) -> u32 {
     w &= 0x5555555555555555 as libc::c_long as libc::c_ulong;
     w = (w | w >> 1 as libc::c_int)
