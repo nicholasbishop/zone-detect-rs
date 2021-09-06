@@ -276,7 +276,7 @@ impl Database {
     /// For a country database this will be the country name, for the
     /// timezone database it will be the timezone ID.
     pub fn simple_lookup(&self, location: Location) -> Option<String> {
-        let results = gen::lookup(&self, location, None);
+        let results = gen::lookup(self, location, None);
 
         if let Some(result) = results.first() {
             match self.table_type {
@@ -301,7 +301,7 @@ impl Database {
     /// Perform a full database lookup for a location.
     pub fn lookup(&self, location: Location) -> ZoneLookup {
         let mut safezone: f32 = 0.0;
-        let results = gen::lookup(&self, location, Some(&mut safezone));
+        let results = gen::lookup(self, location, Some(&mut safezone));
         let matches = results
             .iter()
             .map(|r| {
