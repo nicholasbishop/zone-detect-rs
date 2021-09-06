@@ -10,4 +10,4 @@ location on Earth.
 
 ## Running the example
 
-    cargo run --example demo timezone21.bin 35.0715 -82.5216
+    cargo run --example demo data/timezone21.bin 35.0715 -82.5216
