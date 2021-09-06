@@ -7,6 +7,7 @@ license = "BSD-3-Clause"
 repository = "https://github.com/nicholasbishop/zone-detect-rs"
 description = "Rust version of the ZoneDetect C library."
 keywords = ["time", "zone", "timezone"]
+categories = ["date-and-time"]
 
 [dependencies]
 thiserror = { version = "1.0.29", default_features = false }
