@@ -1,5 +1,8 @@
 # zone-detect
 
+[![crates.io](https://img.shields.io/crates/v/zone-detect.svg)](https://crates.io/crates/zone-detect)
+[![Documentation](https://docs.rs/zone-detect/badge.svg)](https://docs.rs/zone-detect)
+
 This is a Rust version of the
 [ZoneDetect](https://github.com/BertoldVdb/ZoneDetect) C library. The
 initial conversion was done with c2rust, then manually cleaned up (it
