@@ -8,8 +8,8 @@ use zone_detect::{Database, Location, ZoneMatch, ZoneMatchKind};
 
 fn random_location(rng: &mut StdRng) -> Location {
     Location {
-        latitude: rng.gen_range(-90.0, 90.0),
-        longitude: rng.gen_range(-180.0, 180.0),
+        latitude: rng.gen_range(-90.0..90.0),
+        longitude: rng.gen_range(-180.0..180.0),
     }
 }
 
