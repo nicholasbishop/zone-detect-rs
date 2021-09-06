@@ -7,6 +7,7 @@
 #![allow(clippy::cognitive_complexity)]
 
 use crate::{Database, Zone};
+use std::cmp::Ordering;
 
 /*
  * Copyright (c) 2018, Bertold Van den Bergh (vandenbergh@bertold.org)
@@ -230,40 +231,44 @@ fn reader_get_point(
         reference_done = 0_i32 as u8;
         if (*reader.library).version as i32 == 1_i32 {
             let mut point: u64 = 0_i32 as u64;
-            if reader.reference_direction == 0 {
-                if decode_variable_length_unsigned(
-                    reader.library,
-                    &mut reader.polygon_index,
-                    &mut point,
-                ) == 0
-                {
-                    return -1_i32;
+            match reader.reference_direction.cmp(&0) {
+                Ordering::Equal => {
+                    if decode_variable_length_unsigned(
+                        reader.library,
+                        &mut reader.polygon_index,
+                        &mut point,
+                    ) == 0
+                    {
+                        return -1_i32;
+                    }
                 }
-            } else if reader.reference_direction > 0_i32 {
-                /* Read reference forward */
-                if decode_variable_length_unsigned(
-                    reader.library,
-                    &mut reader.reference_start,
-                    &mut point,
-                ) == 0
-                {
-                    return -1_i32;
+                Ordering::Greater => {
+                    /* Read reference forward */
+                    if decode_variable_length_unsigned(
+                        reader.library,
+                        &mut reader.reference_start,
+                        &mut point,
+                    ) == 0
+                    {
+                        return -1_i32;
+                    }
+                    if reader.reference_start >= reader.reference_end {
+                        reference_done = 1_i32 as u8
+                    }
                 }
-                if reader.reference_start >= reader.reference_end {
-                    reference_done = 1_i32 as u8
-                }
-            } else if reader.reference_direction < 0_i32 {
-                /* Read reference backwards */
-                if decode_variable_length_unsigned_reverse(
-                    reader.library,
-                    &mut reader.reference_start,
-                    &mut point,
-                ) == 0
-                {
-                    return -1_i32;
-                }
-                if reader.reference_start <= reader.reference_end {
-                    reference_done = 1_i32 as u8
+                Ordering::Less => {
+                    /* Read reference backwards */
+                    if decode_variable_length_unsigned_reverse(
+                        reader.library,
+                        &mut reader.reference_start,
+                        &mut point,
+                    ) == 0
+                    {
+                        return -1_i32;
+                    }
+                    if reader.reference_start <= reader.reference_end {
+                        reference_done = 1_i32 as u8
+                    }
                 }
             }
             if point == 0 {
