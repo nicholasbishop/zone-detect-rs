@@ -9,9 +9,9 @@ description = "Rust version of the ZoneDetect C library."
 keywords = ["time", "zone", "timezone"]
 
 [dependencies]
-thiserror = { version = "1.0", default_features = false }
+thiserror = { version = "1.0.29", default_features = false }
 
 [dev-dependencies]
-clap = { version = "2.33", default_features = false }
-rand = { version = "0.7", default_features = false }
-structopt = { version = "0.3", default_features = false }
+clap = { version = "2.33.3", default_features = false }
+rand = { version = "0.8.4", default_features = false }
+structopt = { version = "0.3.23", default_features = false }
