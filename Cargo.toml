@@ -2,7 +2,7 @@
 name = "zone-detect"
 version = "1.0.1-alpha.0"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/nicholasbishop/zone-detect-rs"
 description = "Rust version of the ZoneDetect C library."
