@@ -13,19 +13,35 @@ location on Earth.
 
 ## Running the example
 
-    cargo run --example demo data/timezone21.bin 35.0715 -82.5216
+```
+$ cargo run --example demo data/timezone21.bin 35.0715 -82.5216
+zone 0: ZoneMatch {
+    kind: InZone,
+    zone: Zone {
+        polygon_id: 1458,
+        meta_id: 3199,
+        fields: {
+            "CountryAlpha2": "US",
+            "CountryName": "United States",
+            "TimezoneIdPrefix": "America/",
+            "TimezoneId": "New_York",
+        },
+    },
+}
+```
 
 ## Data source
 
 The database containing the location and timezone data is in
 `data/timezone21.bin`. It can be updated as follows:
 
-    git clone https://github.com/BertoldVdb/ZoneDetect
-    cd ZoneDetect/database/builder
-    ./makedb.sh
+```
+git clone https://github.com/BertoldVdb/ZoneDetect
+cd ZoneDetect/database/builder
+./makedb.sh
+cp out_v1/timezone21.bin zone-detect-rs/data/timezone21.bin
+```
     
-This will produce, among other things, `out_v1/timezone21.bin`.
-
 ## Testing
 
 There's a slow test that generates random values and compares the output
