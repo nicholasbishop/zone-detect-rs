@@ -98,7 +98,7 @@ pub fn decode_variable_length_unsigned(
     }
     i = i.wrapping_add(1);
     *result = value;
-    *index = (*index as u32).wrapping_add(i) as u32 as u32;
+    *index = index.wrapping_add(i);
     i
 }
 fn decode_variable_length_unsigned_reverse(
@@ -178,7 +178,7 @@ pub fn parse_string(library: &Database, index: &mut u32) -> Option<Vec<u8>> {
         );
     }
     if remote_str == 0 {
-        *index = (*index as u32).wrapping_add(str_length as u32) as u32 as u32
+        *index = index.wrapping_add(str_length as u32)
     }
     Some(str)
 }
@@ -214,8 +214,7 @@ fn reader_get_point(
         if reader.done as i32 > 1_i32 {
             return 0_i32;
         }
-        if reader.first as i32 != 0 && (*reader.library).version as i32 == 0_i32
-        {
+        if reader.first as i32 != 0 && reader.library.version as i32 == 0_i32 {
             if decode_variable_length_unsigned(
                 reader.library,
                 &mut reader.polygon_index,
@@ -229,7 +228,7 @@ fn reader_get_point(
             }
         }
         reference_done = 0_i32 as u8;
-        if (*reader.library).version as i32 == 1_i32 {
+        if reader.library.version as i32 == 1_i32 {
             let mut point: u64 = 0_i32 as u64;
             match reader.reference_direction.cmp(&0) {
                 Ordering::Equal => {
@@ -306,10 +305,10 @@ fn reader_get_point(
                     {
                         return -1_i32;
                     }
-                    reader.reference_start = (*reader.library)
-                        .data_offset
-                        .wrapping_add(start as u32);
-                    reader.reference_end = (*reader.library)
+                    reader.reference_start =
+                        reader.library.data_offset.wrapping_add(start as u32);
+                    reader.reference_end = reader
+                        .library
                         .data_offset
                         .wrapping_add((start as i64 + diff as i64) as u32);
                     reader.reference_direction = diff;
@@ -329,7 +328,7 @@ fn reader_get_point(
                 }
             }
         }
-        if (*reader.library).version as i32 == 0_i32 {
+        if reader.library.version as i32 == 0_i32 {
             if decode_variable_length_signed(
                 reader.library,
                 &mut reader.polygon_index,
@@ -536,7 +535,9 @@ fn point_in_polygon(
                         closest_lat as i32,
                         prev_lat,
                     );
+                    #[allow(clippy::needless_late_init)]
                     let diff_lat: i64;
+                    #[allow(clippy::needless_late_init)]
                     let diff_lon: i64;
                     if closest_in_box {
                         /* Calculate squared distance to segment. */
@@ -653,12 +654,9 @@ pub fn lookup(
         {
             break;
         }
-        metadata_index = (metadata_index as u32)
-            .wrapping_add(metadata_index_delta as u32)
-            as u32 as u32;
-        polygon_index = (polygon_index as u32)
-            .wrapping_add(polygon_index_delta as u32)
-            as u32 as u32;
+        metadata_index =
+            metadata_index.wrapping_add(metadata_index_delta as u32);
+        polygon_index = polygon_index.wrapping_add(polygon_index_delta as u32);
         if lat_fixed_point < min_lat {
             break;
         }
@@ -697,11 +695,9 @@ pub fn lookup(
         let mut inside_sum: i32 = 0_i32;
         let mut override_result = PointLookupResult::Ignore;
         for j in i..results.len() {
-            if results[i as usize].zone.meta_id
-                == results[j as usize].zone.meta_id
-            {
-                let tmp_result = results[j as usize].result;
-                results[j as usize].result = PointLookupResult::Ignore;
+            if results[i].zone.meta_id == results[j].zone.meta_id {
+                let tmp_result = results[j].result;
+                results[j].result = PointLookupResult::Ignore;
                 /* This is the same result. Is it an exclusion zone? */
                 if tmp_result == PointLookupResult::InZone {
                     inside_sum += 1
@@ -714,9 +710,9 @@ pub fn lookup(
             }
         }
         if override_result != PointLookupResult::Ignore {
-            results[i as usize].result = override_result
+            results[i].result = override_result
         } else if inside_sum != 0 {
-            results[i as usize].result = PointLookupResult::InZone
+            results[i].result = PointLookupResult::InZone
         }
     }
     /* Remove zones to ignore */
@@ -728,7 +724,7 @@ pub fn lookup(
 
         for j in 0..library.field_names.len() {
             let key = library.field_names[j].clone();
-            let value = crate::parse_string(&*library, &mut tmp_index)
+            let value = crate::parse_string(library, &mut tmp_index)
                 .expect("failed to get field data");
             result.zone.fields.insert(key, value);
         }

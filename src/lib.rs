@@ -265,7 +265,7 @@ impl Database {
         // Verify file length
         let length = (tmp + db.data_offset as u64) as usize;
         if length != db.mapping.len() {
-            return Err(Error::LengthMismatch(length as usize));
+            return Err(Error::LengthMismatch(length));
         }
 
         Ok(())
