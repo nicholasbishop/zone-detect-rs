@@ -25,3 +25,14 @@ The database containing the location and timezone data is in
     ./makedb.sh
     
 This will produce, among other things, `out_v1/timezone21.bin`.
+
+## Testing
+
+There's a slow test that generates random values and compares the output
+between ZoneDetect and zone-detect-rs.
+
+```
+# Make sure the demo is built first; just run `make` in the ZoneDetect repo.
+
+ZONEDETECT_DEMO=../ZoneDetect/demo cargo test -- --ignored
+```
