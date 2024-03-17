@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cargo install auto-release
-      - run: auto-release -p zone-detect
+      - run: auto-release -p zone-detect --condition subject
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
