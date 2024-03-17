@@ -15,4 +15,4 @@ thiserror = { version = "1.0.30", default_features = false }
 [dev-dependencies]
 clap = { version = "2.33.3", default_features = false }
 rand = { version = "0.8.4", default_features = false, features = ["std_rng"] }
-structopt = { version = "0.3.25", default_features = false }
+structopt = { version = "0.3.26", default_features = false }
