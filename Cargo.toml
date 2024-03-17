@@ -12,6 +12,5 @@ categories = ["date-and-time"]
 thiserror = { version = "1.0.30", default_features = false }
 
 [dev-dependencies]
-clap = { version = "2.33.3", default_features = false }
+clap = { version = "4.0.0", default_features = false, features = ["derive", "help", "std", "usage"] }
 rand = { version = "0.8.5", default_features = false, features = ["std_rng"] }
-structopt = { version = "0.3.26", default_features = false }

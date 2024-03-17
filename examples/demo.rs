@@ -1,13 +1,14 @@
-use clap::AppSettings;
+use clap::Parser;
 use std::{path::PathBuf, process::exit};
-use structopt::StructOpt;
 use zone_detect::{Database, Location};
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "demo", global_settings(&[AppSettings::AllowNegativeNumbers]))]
+#[derive(Parser)]
+#[command(name = "demo")]
 struct Opt {
     database_path: PathBuf,
+    #[arg(allow_negative_numbers = true)]
     latitude: f32,
+    #[arg(allow_negative_numbers = true)]
     longitude: f32,
 }
 
@@ -24,7 +25,7 @@ fn lookup(opt: &Opt) -> Result<(), zone_detect::Error> {
 }
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     if let Err(err) = lookup(&opt) {
         eprintln!("error: {}", err);
         exit(1);
