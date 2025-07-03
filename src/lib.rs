@@ -12,9 +12,9 @@
 
 #![deny(missing_docs)]
 
-mod gen;
+mod generated;
 
-use gen::{decode_variable_length_unsigned, PointLookupResult};
+use generated::{decode_variable_length_unsigned, PointLookupResult};
 use std::{
     collections::HashMap, convert::TryInto, fs, io, path::Path,
     string::FromUtf8Error,
@@ -149,7 +149,7 @@ fn parse_string(
     db: &Database,
     index: &mut u32,
 ) -> std::result::Result<String, StringParseError> {
-    if let Some(bytes) = gen::parse_string(db, index) {
+    if let Some(bytes) = generated::parse_string(db, index) {
         let string = String::from_utf8(bytes)?;
         Ok(string)
     } else {
@@ -278,7 +278,7 @@ impl Database {
     /// For a country database this will be the country name, for the
     /// timezone database it will be the timezone ID.
     pub fn simple_lookup(&self, location: Location) -> Option<String> {
-        let results = gen::lookup(self, location, None);
+        let results = generated::lookup(self, location, None);
 
         if let Some(result) = results.first() {
             match self.table_type {
@@ -303,7 +303,7 @@ impl Database {
     /// Perform a full database lookup for a location.
     pub fn lookup(&self, location: Location) -> ZoneLookup {
         let mut safezone: f32 = 0.0;
-        let results = gen::lookup(self, location, Some(&mut safezone));
+        let results = generated::lookup(self, location, Some(&mut safezone));
         let matches = results
             .iter()
             .map(|r| {
