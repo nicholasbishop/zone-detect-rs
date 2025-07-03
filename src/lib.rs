@@ -13,6 +13,8 @@
 #![deny(missing_docs)]
 
 mod gen;
+
+use gen::{decode_variable_length_unsigned, PointLookupResult};
 use std::{
     collections::HashMap, convert::TryInto, fs, io, path::Path,
     string::FromUtf8Error,
@@ -58,16 +60,16 @@ pub enum ZoneMatchKind {
 }
 
 impl ZoneMatchKind {
-    fn from_point_lookup(r: gen::PointLookupResult) -> Option<ZoneMatchKind> {
+    fn from_point_lookup(r: PointLookupResult) -> Option<ZoneMatchKind> {
         match r {
-            gen::PointLookupResult::InZone => Some(ZoneMatchKind::InZone),
-            gen::PointLookupResult::InExcludedZone => {
+            PointLookupResult::InZone => Some(ZoneMatchKind::InZone),
+            PointLookupResult::InExcludedZone => {
                 Some(ZoneMatchKind::InExcludedZone)
             }
-            gen::PointLookupResult::OnBorderVertex => {
+            PointLookupResult::OnBorderVertex => {
                 Some(ZoneMatchKind::OnBorderVertex)
             }
-            gen::PointLookupResult::OnBorderSegment => {
+            PointLookupResult::OnBorderSegment => {
                 Some(ZoneMatchKind::OnBorderSegment)
             }
             _ => None,
@@ -243,17 +245,17 @@ impl Database {
 
         // Read section sizes. Note that bboxOffset is already initialized to zero.
         let mut tmp: u64 = 0;
-        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
+        if decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidMetadataOffset);
         }
         db.metadata_offset = tmp as u32 + db.bbox_offset;
 
-        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
+        if decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidDataOffset);
         }
         db.data_offset = tmp as u32 + db.metadata_offset;
 
-        if gen::decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
+        if decode_variable_length_unsigned(db, &mut index, &mut tmp) == 0 {
             return Err(Error::InvalidPaddingOffset);
         }
 
