@@ -328,8 +328,8 @@ mod tests {
     fn test_open() {
         let db = Database::open("data/timezone21.bin").unwrap();
         assert_eq!(db.bbox_offset, 288);
-        assert_eq!(db.metadata_offset, 34032);
-        assert_eq!(db.data_offset, 43157);
+        assert_eq!(db.metadata_offset, 31803);
+        assert_eq!(db.data_offset, 40825);
         assert_eq!(db.notice, "Contains data from Natural Earth, placed in the Public Domain. Contains information from https://github.com/evansiroky/timezone-boundary-builder, which is made available here under the Open Database License \\(ODbL\\).".to_string());
         assert_eq!(db.table_type, TableType::Timezone);
         assert_eq!(db.precision, 21);
