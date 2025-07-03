@@ -286,7 +286,7 @@ impl Database {
                         result.zone.fields.get("TimezoneIdPrefix")
                     {
                         if let Some(id) = result.zone.fields.get("TimezoneId") {
-                            return Some(format!("{}{}", prefix, id));
+                            return Some(format!("{prefix}{id}"));
                         }
                     }
                     None
@@ -357,7 +357,7 @@ mod tests {
         );
         // Canberra
         assert_eq!(
-            db.simple_lookup(Location::new(-35.2809, 149.1300)).unwrap(),
+            db.simple_lookup(Location::new(-35.2809, 149.13)).unwrap(),
             "Australia/Sydney"
         );
         // New York City

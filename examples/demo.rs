@@ -19,7 +19,7 @@ fn lookup(opt: &Opt) -> Result<(), zone_detect::Error> {
         longitude: opt.longitude,
     });
     for (index, zone) in result.matches.iter().enumerate() {
-        println!("zone {}: {:#?}", index, zone);
+        println!("zone {index}: {zone:#?}");
     }
     Ok(())
 }
@@ -27,7 +27,7 @@ fn lookup(opt: &Opt) -> Result<(), zone_detect::Error> {
 fn main() {
     let opt = Opt::parse();
     if let Err(err) = lookup(&opt) {
-        eprintln!("error: {}", err);
+        eprintln!("error: {err}");
         exit(1);
     }
 }
