@@ -9,7 +9,7 @@ keywords = ["time", "zone", "timezone"]
 categories = ["date-and-time"]
 
 [dependencies]
-thiserror = { version = "1.0.30", default-features = false }
+thiserror = { version = "2.0.0", default-features = false }
 
 [dev-dependencies]
 clap = { version = "4.0.0", default-features = false, features = ["derive", "help", "std", "usage"] }
