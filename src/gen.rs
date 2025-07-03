@@ -52,7 +52,7 @@ pub struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    fn new(library: &'a Database, polygon_index: u32) -> Reader {
+    fn new(library: &'a Database, polygon_index: u32) -> Reader<'a> {
         Reader {
             library,
             polygon_index,

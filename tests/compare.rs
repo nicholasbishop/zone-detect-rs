@@ -85,8 +85,8 @@ fn test_compare() {
         let expected = std::str::from_utf8(&output.stdout).unwrap();
         let (actual, results) = lookup(&db, loc);
         if actual != expected {
-            println!("expected: {}", expected);
-            println!("actual: {}", actual);
+            println!("expected: {expected}");
+            println!("actual: {actual}");
             dbg!(&results);
         }
         assert_eq!(
