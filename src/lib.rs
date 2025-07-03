@@ -14,7 +14,7 @@
 
 mod generated;
 
-use generated::{decode_variable_length_unsigned, PointLookupResult};
+use generated::{PointLookupResult, decode_variable_length_unsigned};
 use std::{
     collections::HashMap, convert::TryInto, fs, io, path::Path,
     string::FromUtf8Error,
