@@ -9,8 +9,8 @@ keywords = ["time", "zone", "timezone"]
 categories = ["date-and-time"]
 
 [dependencies]
-thiserror = { version = "1.0.30", default_features = false }
+thiserror = { version = "1.0.30", default-features = false }
 
 [dev-dependencies]
-clap = { version = "4.0.0", default_features = false, features = ["derive", "help", "std", "usage"] }
-rand = { version = "0.8.5", default_features = false, features = ["std_rng"] }
+clap = { version = "4.0.0", default-features = false, features = ["derive", "help", "std", "usage"] }
+rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
