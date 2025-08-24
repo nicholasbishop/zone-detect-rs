@@ -17,6 +17,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          # Extract the MSRV from Cargo.toml.
+          msrv=$(cargo metadata --no-deps --format-version=1 | jq --raw-output '.packages[] | .rust_version')
+
+          rustup toolchain install ${msrv} --profile minimal --no-self-update
+          cargo +${msrv} build
+
   test:
     name: Test Suite
     runs-on: ubuntu-latest
